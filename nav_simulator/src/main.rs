@@ -4,13 +4,15 @@ mod util;
 
 use satellite::orbit::*;
 
-#[allow(unused_imports)]
 use crate::satellite::Satellite;
 
-#[allow(unused_imports)]
-use std::{thread, time::Duration};
+use crate::util::*;
+
+use std::{thread, sync::mpsc, time::Duration};
 
 fn main(){
+
+    let (sender, receiver) = mpsc::channel();
     
     let mut sat1 = Satellite::default();
     let mut sat2 = Satellite::default();
@@ -46,17 +48,21 @@ fn main(){
     let sim1 = thread::spawn(move ||{
         println!("Thread 1");
         sat1.simulate_orbit(Orbit::GEO, 0.0);
-        thread::sleep(Duration::from_millis(5));
+        let sat1_tm = sat1.populate();
+        thread::sleep(Duration::from_millis(1000));
+        sender.send(sat1_tm).unwrap();
     });
 
     let sim2 = thread::spawn(move ||{
         println!("Thread 2");
         sat2.simulate_orbit(Orbit::GEO, 90.0);
+        thread::sleep(Duration::from_millis(1000));
     });
 
     let sim3 = thread::spawn(move ||{
         println!("Thread 3");
         sat3.simulate_orbit(Orbit::GEO, 180.0);
+        thread::sleep(Duration::from_millis(1000));
     });
 
     println!("TEST 3: Vehicle simulation");
@@ -72,6 +78,7 @@ fn main(){
     let sim4 = thread::spawn(move ||{
         println!("Thread 4");
         car.simulate_motion(&goal_position);
+        thread::sleep(Duration::from_millis(1000));
     });
 
     // Wait for each thread to finish
@@ -79,5 +86,13 @@ fn main(){
     sim2.join().unwrap();
     sim3.join().unwrap();
     sim4.join().unwrap();
+
+    println!("TEST 4: Output telemetry");
+    let received = receiver.recv().unwrap();
+
+    // {id, ..} because the other fields aren't needed
+    if let util::Telemetry::SATELLITE{id, ..} = &received{
+        println!("TM from Satellite {} : {:#?}", id, received);
+    }
 
 }
