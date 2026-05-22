@@ -69,8 +69,8 @@ fn main(){
 
     let mut car = vehicle::Vehicle::default();
     let goal_position : (f64, f64) = (100.0, 150.0);
-    //let starting_heading = goal_position.1.atan2(goal_position.0);
-    //car.set_heading(starting_heading);
+    let starting_heading = goal_position.1.atan2(goal_position.0);
+    car.set_heading(starting_heading);
     car.set_velocity(35.0);  // [m/s]
     car.set_fuel_rate(7.0);  // [m/L]
     car.set_fuel(55.0);      // [L]
@@ -78,6 +78,7 @@ fn main(){
     car.add_waypoint(&(105.0, 155.0));
     car.add_waypoint(&(105.0, 185.0));
     car.add_waypoint(&(135.0, 185.0));
+
 
     let sim4 = thread::spawn(move ||{
         println!("Thread 4");

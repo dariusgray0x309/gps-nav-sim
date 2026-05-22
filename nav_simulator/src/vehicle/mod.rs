@@ -75,7 +75,9 @@ impl Vehicle{
     }
 
     pub fn update_fuel(&mut self, dt : f64) {
-        self.fuel -= self.fuel_rate * dt;
+        let distance = self.v * dt;
+        let fuel_used = distance / self.fuel_rate;
+        self.fuel -= fuel_used;
     }
 
     pub fn compute_relative_position(&mut self, goal : &(f64, f64)) -> (f64, f64){
@@ -93,18 +95,20 @@ impl Vehicle{
         let mut vx = self.v * self.psi.cos();
         let mut vy = self.v * self.psi.sin();
 
+        let original_v = self.v;
+
         let mut time : f64 = 0.0;
         let dt : f64 = 0.01;
 
-        let kp = ProportionalGain::get_gain(ProportionalGain::AGGRESSIVE);
+        let mut kp = ProportionalGain::get_gain(ProportionalGain::AGGRESSIVE);
 
         let total_fuel : f64 = self.fuel;
 
-        let heading_rate_limit : f64 = (30.0 as f64).to_radians();
-
-        let epsilon : f64 = 1e-4;
+        let heading_rate_limit : f64 = (80.0 as f64).to_radians();
 
         let number_of_waypoints = self.waypoints.len();
+
+        let waypoint_radius = (self.v * dt).max(1.0);
 
         if number_of_waypoints == 0 {
             println!("No waypoints for guidance!");
@@ -113,15 +117,22 @@ impl Vehicle{
 
         for (index, goal) in self.waypoints().iter().enumerate(){
 
-            loop{
+            self.v = original_v;
+            kp = ProportionalGain::get_gain(ProportionalGain::AGGRESSIVE);
 
-                // Update the position
-                self.x += vx * dt;
-                self.y += vy * dt;
+            loop{
 
                 let rel_pos = self.compute_relative_position(goal);
 
-                if rel_pos.0 < epsilon && rel_pos.1 < epsilon{
+                let distance = rel_pos.0.hypot(rel_pos.1);
+                println!("Total distance from goal = {distance}");
+
+                if distance < 10.0{
+                    self.v = distance.min(original_v);
+                    kp = ProportionalGain::get_gain(ProportionalGain::FAST);
+                }
+
+                if distance <= waypoint_radius{
                     println!("Reached waypoint {} out of {}\n", index+1, number_of_waypoints);
                     break;
                 }
@@ -142,16 +153,21 @@ impl Vehicle{
                 vx = self.v * self.psi.cos();
                 vy = self.v * self.psi.sin();
 
+                // Update the position
+                self.x += vx * dt;
+                self.y += vy * dt;
+
                 self.update_fuel(dt);
 
                 if self.fuel <= 0.0{
                     println!("No more fuel available -- ending simulation");
                     println!("Completed {}% of the path\n", ((index) as f64 / number_of_waypoints as f64) * 100.0);
-                    break;
+                    return;
                 }
 
-                println!("Goal: x = {}, y = {}", goal.0, goal.1);
+                println!("Waypoint {} goal: x = {}, y = {}", index+1, goal.0, goal.1);
                 println!("Current position @t = {}: x = {}, y = {}", time, self.x, self.y);
+                println!("Velocity magnitude = {}", self.v);
                 println!("{}% of fuel remaining\n", (self.fuel / total_fuel) * 100.0);
 
                 time += dt;
