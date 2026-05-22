@@ -91,16 +91,12 @@ impl Vehicle{
     }
 
     pub fn simulate_motion(&mut self){
-        // Initial conditions
-        let mut vx = self.v * self.psi.cos();
-        let mut vy = self.v * self.psi.sin();
 
         let original_v = self.v;
 
         let mut time : f64 = 0.0;
+        
         let dt : f64 = 0.01;
-
-        let mut kp = ProportionalGain::get_gain(ProportionalGain::AGGRESSIVE);
 
         let total_fuel : f64 = self.fuel;
 
@@ -118,7 +114,7 @@ impl Vehicle{
         for (index, goal) in self.waypoints().iter().enumerate(){
 
             self.v = original_v;
-            kp = ProportionalGain::get_gain(ProportionalGain::AGGRESSIVE);
+            let mut kp = ProportionalGain::get_gain(ProportionalGain::AGGRESSIVE);
 
             loop{
 
@@ -150,8 +146,8 @@ impl Vehicle{
                     println!("Turning with heading rate = {} deg/sec", heading_rate.to_degrees());
                 }
 
-                vx = self.v * self.psi.cos();
-                vy = self.v * self.psi.sin();
+                let vx = self.v * self.psi.cos();
+                let vy = self.v * self.psi.sin();
 
                 // Update the position
                 self.x += vx * dt;
