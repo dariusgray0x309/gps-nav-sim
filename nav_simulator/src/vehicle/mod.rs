@@ -2,8 +2,6 @@ mod controller;
 
 use controller::ProportionalGain;
 
-//use super::util;
-
 #[derive(Default)]
 pub struct Vehicle{
     x         : f64,
@@ -12,7 +10,8 @@ pub struct Vehicle{
     psi       : f64,
     fuel      : f64,
     fuel_rate : f64,
-    timestamp : f64
+    timestamp : f64,
+    waypoints : Vec<(f64, f64)>
 }
 
 #[allow(dead_code)]
@@ -40,6 +39,10 @@ impl Vehicle{
 
     pub fn timestamp(&self) -> f64{
         self.timestamp
+    }
+
+    pub fn waypoints(&self) -> Vec<(f64, f64)>{
+        self.waypoints.clone()
     }
 
     pub fn set_position(&mut self, input : (f64, f64)){
@@ -81,7 +84,11 @@ impl Vehicle{
         (delta_x, delta_y)
     }
 
-    pub fn simulate_motion(&mut self, goal : &(f64, f64)){
+    pub fn add_waypoint(&mut self, input : &(f64, f64)){
+        self.waypoints.push(*input);
+    }
+
+    pub fn simulate_motion(&mut self){
         // Initial conditions
         let mut vx = self.v * self.psi.cos();
         let mut vy = self.v * self.psi.sin();
@@ -97,52 +104,60 @@ impl Vehicle{
 
         let epsilon : f64 = 1e-4;
 
-        loop{
+        let number_of_waypoints = self.waypoints.len();
 
-            // Update the position
-            self.x += vx * dt;
-            self.y += vy * dt;
+        if number_of_waypoints == 0 {
+            println!("No waypoints for guidance!");
+            return;
+        }
 
-            let rel_pos = self.compute_relative_position(goal);
+        for (index, goal) in self.waypoints().iter().enumerate(){
 
-            if rel_pos.0 < epsilon && rel_pos.1 < epsilon{
-                println!("Reached the destination");
-                break;
-            }
+            loop{
 
-            let desired_heading : f64 = rel_pos.1.atan2(rel_pos.0);
+                // Update the position
+                self.x += vx * dt;
+                self.y += vy * dt;
 
-            // Proportional controller
-            let heading_rate : f64 = (kp * (desired_heading - self.psi)).clamp(-heading_rate_limit, heading_rate_limit);
+                let rel_pos = self.compute_relative_position(goal);
 
-            self.update_heading(heading_rate, dt);
+                if rel_pos.0 < epsilon && rel_pos.1 < epsilon{
+                    println!("Reached waypoint {} out of {}\n", index+1, number_of_waypoints);
+                    break;
+                }
 
-            if self.psi != 0.0{
-                println!("Desired heading = {} degrees", desired_heading.to_degrees());
-                println!("Current heading = {} degrees", self.psi.to_degrees());
-                println!("Turning with heading rate = {} deg/sec", heading_rate.to_degrees());
-            }
+                let desired_heading : f64 = rel_pos.1.atan2(rel_pos.0);
 
-            vx = self.v * self.psi.cos();
-            vy = self.v * self.psi.sin();
+                // Proportional controller
+                let heading_rate : f64 = (kp * (desired_heading - self.psi)).clamp(-heading_rate_limit, heading_rate_limit);
 
-            self.update_fuel(dt);
+                self.update_heading(heading_rate, dt);
 
-            if self.fuel <= 0.0{
-                println!("No more fuel available -- ending simulation");
-                break;
-            }
+                if self.psi != 0.0{
+                    println!("Desired heading = {} degrees", desired_heading.to_degrees());
+                    println!("Current heading = {} degrees", self.psi.to_degrees());
+                    println!("Turning with heading rate = {} deg/sec", heading_rate.to_degrees());
+                }
 
-            println!("Goal: x = {}, y = {}", goal.0, goal.1);
-            println!("Current position @t = {}: x = {}, y = {}", time, self.x, self.y);
-            println!("{}% of fuel remaining\n", (self.fuel / total_fuel) * 100.0);
+                vx = self.v * self.psi.cos();
+                vy = self.v * self.psi.sin();
 
-            time += dt;
+                self.update_fuel(dt);
 
-            self.timestamp = time;
+                if self.fuel <= 0.0{
+                    println!("No more fuel available -- ending simulation");
+                    println!("Completed {}% of the path\n", ((index) as f64 / number_of_waypoints as f64) * 100.0);
+                    break;
+                }
 
-            if time > 7.0{
-                break;
+                println!("Goal: x = {}, y = {}", goal.0, goal.1);
+                println!("Current position @t = {}: x = {}, y = {}", time, self.x, self.y);
+                println!("{}% of fuel remaining\n", (self.fuel / total_fuel) * 100.0);
+
+                time += dt;
+
+                self.timestamp = time;
+
             }
 
         }

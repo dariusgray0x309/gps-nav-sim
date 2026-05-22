@@ -74,10 +74,14 @@ fn main(){
     car.set_velocity(35.0);  // [m/s]
     car.set_fuel_rate(7.0);  // [m/L]
     car.set_fuel(55.0);      // [L]
+    car.add_waypoint(&goal_position);
+    car.add_waypoint(&(105.0, 155.0));
+    car.add_waypoint(&(105.0, 185.0));
+    car.add_waypoint(&(135.0, 185.0));
 
     let sim4 = thread::spawn(move ||{
         println!("Thread 4");
-        car.simulate_motion(&goal_position);
+        car.simulate_motion();
         thread::sleep(Duration::from_millis(1000));
     });
 
