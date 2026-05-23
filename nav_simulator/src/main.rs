@@ -8,6 +8,7 @@ use crate::satellite::Satellite;
 
 use crate::util::*;
 
+#[allow(unused_imports)]
 use std::{thread, time::Duration, collections::HashMap};
 use std::sync::{mpsc, Arc, Barrier};
 
@@ -54,6 +55,7 @@ fn main(){
     sat2.set_position((default_alt, 0.0));
     sat3.set_position((default_alt, 0.0));
 
+    let step_size = 0.01;
 
     println!("TEST 2: Vehicle simulation");
     let mut car = vehicle::Vehicle::default();
@@ -67,13 +69,21 @@ fn main(){
     car.add_waypoint(&(105.0, 155.0));
     car.add_waypoint(&(105.0, 185.0));
     car.add_waypoint(&(135.0, 185.0));
-    car.simulate_motion();
+    car.initialize();
 
-    let last_car_position = car.position();
+    loop{
+        car.update(step_size);
+        if car.complete(){
+            break;
+        }
+    }
+
+    // long pause for debugging
+    //thread::sleep(Duration::from_millis(10000));
+
+    let last_car_position: (f64, f64) = car.position();
 
     println!("TEST 3: Orbit simulation");
-
-    let step_size = 0.01;
 
     let stop_time = 20.0;
 
