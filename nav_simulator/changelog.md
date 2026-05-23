@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0.0.5] - 2026-05-22
+### Changed
+- Updated the vehicle and satellite modules so that each sim is split up into an initialization and an update rather than each having an internal loop
+
 ## [0.0.4] - 2026-05-22
 ### Changed
 - Updated the vehicle module with the following:

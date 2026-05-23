@@ -8,7 +8,12 @@ pub struct Satellite{
     x         : f64,
     y         : f64,
     r         : f64,
-    timestamp : f64
+    vx        : f64,
+    vy        : f64,
+    timestamp : f64,
+    theta     : f64,
+    frame     : u64,
+    init      : bool
 }
 
 #[allow(dead_code)]
@@ -30,6 +35,10 @@ impl Satellite{
         self.timestamp
     }
 
+    pub fn frame(&self) -> u64{
+        self.frame
+    }
+
     pub fn set_position(&mut self, input : (f64, f64)){
         self.x = input.0;
         self.y = input.1;
@@ -41,6 +50,14 @@ impl Satellite{
 
     pub fn set_id(&mut self, input : u8){
         self.id = input;
+    }
+
+    pub fn set_timestamp(&mut self, input : f64){
+        self.timestamp = input;
+    }
+
+    pub fn set_frame(&mut self, input : u64){
+        self.frame = input;
     }
 
     pub fn compute_trilateration(sat1 : &Satellite, sat2 : &Satellite, sat3 : &Satellite) -> (f64, f64){
@@ -70,10 +87,13 @@ impl Satellite{
 
     }
 
-    pub fn simulate_orbit(&mut self, orbit_type : Orbit, rotation_angle : f64) {
+    pub fn compute_range(&mut self, input : &(f64, f64)){
+        let rel_pos : (f64, f64) = (self.x - input.0, self.y - input.1);
+        self.r = rel_pos.0.hypot(rel_pos.1);
+    }
 
-        println!("Orbit for Satellite #{}", self.id);
-        
+    pub fn initialize(&mut self, orbit_type : Orbit, rotation_angle : f64){
+
         // Angle (out of 360) along the assumed circular orbit
         let angle_rad = rotation_angle.to_radians();
 
@@ -86,58 +106,58 @@ impl Satellite{
         let vx_prime = v.0 * angle_rad.cos() - v.1 * angle_rad.sin();
         let vy_prime = v.0 * angle_rad.sin() + v.1 * angle_rad.cos();
 
-        // Update the satellite's starting position
+        // Initialize the satellite's starting position
         self.x = x_prime;
         self.y = y_prime;
 
-        // Initial conditions:
-        let mut pos = (self.x, self.y);
-        let mut vel = (vx_prime, vy_prime);
-        let mut theta = ((pos.1 as f64).atan2(pos.0 as f64)).to_degrees();
+        // Initialize the satellite's starting velocity
+        self.vx = vx_prime;
+        self.vy = vy_prime;
 
-        let original_angle = theta;
+        // Initialize the angle along the orbit
+        self.theta = self.y.atan2(self.x);
+
+        // Initialization complete
+        self.init = true;
 
         println!("----Initial Values----");
-        println!("Position components = x = {}, y = {}", pos.0, pos.1);
-        println!("Velocity components = x = {}, y = {}", vel.0, vel.1);
+        println!("Position components = x = {}, y = {}", self.x, self.y);
+        println!("Velocity components = x = {}, y = {}", self.vx, self.vy);
+        println!("Angle = {} degrees\n", self.theta.to_degrees());
+
+    }
+
+    pub fn update(&mut self, dt : f64) {
+
+        println!("Orbit for Satellite #{} @ t = {}", self.id, self.timestamp);
+
+        // States
+        let mut theta = (self.y.atan2(self.x)).to_degrees();
+
+        let original_angle = self.theta;
+
+        println!("----Current Values----");
+        println!("Position components = x = {}, y = {}", self.x, self.y);
+        println!("Velocity components = x = {}, y = {}", self.vx, self.vy);
         println!("Angle = {theta} degrees\n");
 
-        let mut time : f64 = 0.0;
-        let dt : f64 = 0.01;
+        self.timestamp += dt;
 
-        loop{
+        self.frame += 1;
 
-            time += dt;
+        let acc = Orbit::compute_gravitational_acceleration(&self.position());
+        println!("Acceleration components = x = {}, y = {}", acc.0, acc.1);
 
-            println!("Satellite {} @t = {time}", self.id);
+        self.vx += acc.0*dt;
+        self.vy += acc.1*dt;
+        println!("Velocity components = x = {}, y = {}", self.vx, self.vy);
 
-            let acc = Orbit::compute_gravitational_acceleration(&pos);
+        self.x += self.vx*dt;
+        self.y += self.vy*dt;
+        println!("Position components = x = {}, y = {}", self.x, self.y);
 
-            println!("Acceleration components = x = {}, y = {}", acc.0, acc.1);
-
-            // Updating velocity
-            vel.0 += acc.0*dt;
-            vel.1 += acc.1*dt;
-
-            println!("Velocity components = x = {}, y = {}", vel.0, vel.1);
-
-            // Updating position
-            pos.0 += vel.0*dt;
-            pos.1 += vel.1*dt;
-
-            println!("Position components = x = {}, y = {}", pos.0, pos.1);
-
-            theta = ((pos.1 as f64).atan2(pos.0 as f64)).to_degrees();
-
-            println!("Angular difference from starting position = {} degrees\n", (theta - original_angle).abs());
-
-            self.timestamp = time;
-
-            if time >= 2000.0{
-                break;
-            }
-
-        }
+        theta = (self.y.atan2(self.x)).to_degrees();
+        println!("Angular difference from starting position = {} degrees\n", (theta - original_angle).abs());
 
     }
 
