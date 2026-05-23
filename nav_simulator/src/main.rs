@@ -8,11 +8,25 @@ use crate::satellite::Satellite;
 
 use crate::util::*;
 
-use std::{thread, sync::mpsc, time::Duration};
+use std::{thread, time::Duration, collections::HashMap};
+use std::sync::{mpsc, Arc, Barrier};
+
 
 fn main(){
 
     let (sender, receiver) = mpsc::channel();
+    let sender_1 = sender.clone();
+    let sender_2 = sender.clone();
+    let sender_3 = sender.clone();
+
+    // Arc : shared ownership between threads
+    // Barrier : wait for (n) threads
+    let barrier = Arc::new(Barrier::new(3));
+    let barrier_1 = barrier.clone();
+    let barrier_2 = barrier.clone();
+    let barrier_3 = barrier.clone();
+
+    let mut frames : HashMap<u64, Vec<Telemetry>> = HashMap::new();
     
     let mut sat1 = Satellite::default();
     let mut sat2 = Satellite::default();
@@ -40,33 +54,8 @@ fn main(){
     sat2.set_position((default_alt, 0.0));
     sat3.set_position((default_alt, 0.0));
 
-    println!("TEST 2: Orbit simulation");
 
-    // Need to pass ownership to the thread because it's possible that sat1
-    // can get deallocated prior to the thread finishing what it needs to do
-    // resulting in a dangling reference. The fix is the "move" keyword
-    let sim1 = thread::spawn(move ||{
-        println!("Thread 1");
-        sat1.simulate_orbit(Orbit::GEO, 0.0);
-        let sat1_tm = sat1.populate();
-        thread::sleep(Duration::from_millis(1000));
-        sender.send(sat1_tm).unwrap();
-    });
-
-    let sim2 = thread::spawn(move ||{
-        println!("Thread 2");
-        sat2.simulate_orbit(Orbit::GEO, 90.0);
-        thread::sleep(Duration::from_millis(1000));
-    });
-
-    let sim3 = thread::spawn(move ||{
-        println!("Thread 3");
-        sat3.simulate_orbit(Orbit::GEO, 180.0);
-        thread::sleep(Duration::from_millis(1000));
-    });
-
-    println!("TEST 3: Vehicle simulation");
-
+    println!("TEST 2: Vehicle simulation");
     let mut car = vehicle::Vehicle::default();
     let goal_position : (f64, f64) = (100.0, 150.0);
     let starting_heading = goal_position.1.atan2(goal_position.0);
@@ -78,26 +67,96 @@ fn main(){
     car.add_waypoint(&(105.0, 155.0));
     car.add_waypoint(&(105.0, 185.0));
     car.add_waypoint(&(135.0, 185.0));
+    car.simulate_motion();
 
+    let last_car_position = car.position();
 
-    let sim4 = thread::spawn(move ||{
-        println!("Thread 4");
-        car.simulate_motion();
-        thread::sleep(Duration::from_millis(1000));
+    println!("TEST 3: Orbit simulation");
+
+    let step_size = 0.01;
+
+    let stop_time = 20.0;
+
+    // Need to pass ownership to the thread because it's possible that sat1
+    // can get deallocated prior to the thread finishing what it needs to do
+    // resulting in a dangling reference. The fix is the "move" keyword
+    let sim1 = thread::spawn(move ||{
+        println!("Thread 1");
+        sat1.initialize(Orbit::GEO, 0.0);
+        loop{
+            sat1.update(step_size);
+            sat1.compute_range(&last_car_position);
+            let tm = sat1.populate();
+            //thread::sleep(Duration::from_millis(1000));
+            sender_1.send(tm).unwrap();
+            barrier_1.wait();
+
+            if sat1.timestamp() >= stop_time {
+                break;
+            }
+        }
+    });
+
+    let sim2 = thread::spawn(move ||{
+        println!("Thread 2");
+        sat2.initialize(Orbit::GEO, 90.0);
+        loop {
+            sat2.update(step_size);
+            sat2.compute_range(&last_car_position);
+            let tm = sat2.populate();
+            //thread::sleep(Duration::from_millis(1000));
+            sender_2.send(tm).unwrap();
+            barrier_2.wait();
+
+            if sat2.timestamp() >= stop_time {
+                break;
+            }
+        }
+    });
+
+    let sim3 = thread::spawn(move ||{
+        println!("Thread 3");
+        sat3.initialize(Orbit::GEO, 180.0);
+        loop{
+            sat3.update(step_size);
+            sat3.compute_range(&last_car_position);
+            let tm = sat3.populate();
+            //thread::sleep(Duration::from_millis(1000));
+            sender_3.send(tm).unwrap();
+            barrier_3.wait();
+
+            if sat3.timestamp() >= stop_time{
+                break;
+            }
+        }
     });
 
     // Wait for each thread to finish
     sim1.join().unwrap();
     sim2.join().unwrap();
     sim3.join().unwrap();
-    sim4.join().unwrap();
 
     println!("TEST 4: Output telemetry");
-    let received = receiver.recv().unwrap();
 
-    // {id, ..} because the other fields aren't needed
-    if let util::Telemetry::SATELLITE{id, ..} = &received{
-        println!("TM from Satellite {} : {:#?}", id, received);
+    // receiver.recv waits forever until the next message
+    // receiver.try_recv will exit immediately if there isn't a new message
+    while let Ok(msg) = receiver.try_recv(){
+        if let util::Telemetry::SATELLITE { id: _, x: _, y: _, t: _, r: _, frame} = msg{
+            //println!("TM from Satellite {}", msg);
+            frames.entry(frame).or_default().push(msg);
+        }
+    }
+
+    for (key, val) in &frames{
+
+        if val.len() != 3{
+            println!("This doesn't have 3 elements!");
+        }
+
+        //println!("val_1={}, val_2={}, val_3={}", val[0], val[1], val[2]);
+        let (x, y) = util::Telemetry::compute_trilateration(val);
+
+        println!("Frame:{}, Trilateration resulted in x={x}, y={y}", key);
     }
 
 }
