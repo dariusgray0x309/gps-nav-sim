@@ -11,6 +11,8 @@ pub struct Vehicle{
     fuel      : f64,
     fuel_rate : f64,
     timestamp : f64,
+    frame     : u64,
+    init      : bool,
     waypoints : Vec<(f64, f64)>
 }
 
@@ -43,6 +45,10 @@ impl Vehicle{
 
     pub fn waypoints(&self) -> Vec<(f64, f64)>{
         self.waypoints.clone()
+    }
+
+    pub fn frame(&self) -> u64{
+        self.frame
     }
 
     pub fn set_position(&mut self, input : (f64, f64)){
@@ -95,7 +101,7 @@ impl Vehicle{
         let original_v = self.v;
 
         let mut time : f64 = 0.0;
-        
+
         let dt : f64 = 0.01;
 
         let total_fuel : f64 = self.fuel;
@@ -110,6 +116,8 @@ impl Vehicle{
             println!("No waypoints for guidance!");
             return;
         }
+
+        self.init = true;
 
         for (index, goal) in self.waypoints().iter().enumerate(){
 
@@ -169,6 +177,8 @@ impl Vehicle{
                 time += dt;
 
                 self.timestamp = time;
+
+                self.frame += 1;
 
             }
 
