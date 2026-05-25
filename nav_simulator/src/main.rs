@@ -10,7 +10,7 @@ use crate::util::*;
 
 #[allow(unused_imports)]
 use std::{thread, time::Duration, collections::HashMap};
-use std::sync::{Arc, Barrier, mpsc};
+use std::sync::{Arc, Barrier, mpsc, atomic::{AtomicBool, Ordering}};
 
 fn main(){
 
@@ -28,6 +28,12 @@ fn main(){
     let barrier_2 = barrier.clone();
     let barrier_3 = barrier.clone();
     let barrier_4 = barrier.clone();
+
+    let stop = Arc::new(AtomicBool::new(false));
+    let stop_1 = stop.clone();
+    let stop_2 = stop.clone();
+    let stop_3 = stop.clone();
+    let stop_4 = stop.clone();
 
     let mut sat_frames : HashMap<u64, Vec<Telemetry>> = HashMap::new();
     let mut car_frames : HashMap<u64, Telemetry> = HashMap::new();
@@ -53,11 +59,16 @@ fn main(){
         sat1.initialize(Orbit::GEO, 0.0);
         sat1.set_position((default_alt, 0.0));
         loop{
+
+            if stop_1.load(Ordering::Relaxed){
+                break;
+            }
+
             sat1.update(step_size);
             let tm = sat1.populate();
             //thread::sleep(Duration::from_millis(1000));
-            sender_1.send(tm).unwrap();
             barrier_1.wait();
+            sender_1.send(tm).unwrap();
 
             if sat1.timestamp() >= stop_time {
                 break;
@@ -72,11 +83,16 @@ fn main(){
         sat2.set_position((default_alt, 0.0));
         sat2.initialize(Orbit::GEO, 30.0);
         loop {
+
+            if stop_2.load(Ordering::Relaxed){
+                break;
+            }
+
             sat2.update(step_size);
             let tm = sat2.populate();
             //thread::sleep(Duration::from_millis(1000));
-            sender_2.send(tm).unwrap();
             barrier_2.wait();
+            sender_2.send(tm).unwrap();
 
             if sat2.timestamp() >= stop_time {
                 break;
@@ -91,11 +107,16 @@ fn main(){
         sat3.set_position((default_alt, 0.0));
         sat3.initialize(Orbit::GEO, 60.0);
         loop{
+
+            if stop_3.load(Ordering::Relaxed){
+                break;
+            }
+
             sat3.update(step_size);
             let tm = sat3.populate();
             //thread::sleep(Duration::from_millis(1000));
-            sender_3.send(tm).unwrap();
             barrier_3.wait();
+            sender_3.send(tm).unwrap();
 
             if sat3.timestamp() >= stop_time{
                 break;
@@ -119,14 +140,19 @@ fn main(){
         car.initialize();        
 
         loop{
+
+            if stop_4.load(Ordering::Relaxed){
+                break;
+            }
+
             car.update(step_size);
             let tm = car.populate();
             //thread::sleep(Duration::from_millis(1000));
-            sender_4.send(tm).unwrap();
             barrier_4.wait();
+            sender_4.send(tm).unwrap();
 
             if car.complete(){
-                break;
+                stop_4.store(true, Ordering::Relaxed);
             }
         }
     });
@@ -147,10 +173,10 @@ fn main(){
                 println!("TM from Satellite {}", msg);
                 sat_frames.entry(frame).or_default().push(msg)
             },
-            util::Telemetry::VEHICLE { mut x, y: _, fuel: _, t: _, frame } => {
+            util::Telemetry::VEHICLE { x , y , fuel , t , frame } => {
                 println!("TM from Vehicle {}", msg);
-                x += orbit::EARTH_RADIUS_AVG; // convert from local to global
-                car_frames.insert(frame, msg);
+                let global_tm = util::Telemetry::VEHICLE { x: x + orbit::EARTH_RADIUS_AVG, y, fuel, t, frame };
+                car_frames.insert(frame, global_tm);
             }
         }
     }
@@ -161,13 +187,17 @@ fn main(){
             println!("This doesn't have 3 elements!");
         }
 
-        println!("val_1={}, val_2={}, val_3={}", sats[0], sats[1], sats[2]);
+        println!("sat_1={}", sats[0]);
+        println!("sat_2={}", sats[1]);
+        println!("sat_3={}", sats[2]);
         //let (x, y) = util::Telemetry::compute_trilateration(sats);
 
         //println!("Frame:{}, Trilateration resulted in x={x}, y={y}", frame);
 
         let car = car_frames.get(frame);
-        println!("car tm = {}", car.unwrap());
+        if car.is_some(){
+            println!("car tm = {}", car.unwrap());
+        }
     }
 
 }
