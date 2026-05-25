@@ -42,6 +42,8 @@ fn main() -> anyhow::Result<()>{
     sat.set_logging_enabled(cli.logging);
     sat.initialize(Orbit::GEO, cli.phase_angle);
 
+    println!("{}::Sat_{}:: connecting publisher to {}\n", env!("CARGO_BIN_NAME"), cli.id, cli.pub_addr);
+
     let period = Duration::from_secs_f64(cli.dt * 10.0);
 
     loop{

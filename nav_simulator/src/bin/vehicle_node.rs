@@ -51,6 +51,8 @@ fn main() -> anyhow::Result<()>{
 
     let period = Duration::from_secs_f64(cli.dt * 5.0);
 
+    println!("{}:: connecting publisher to {}\n", env!("CARGO_BIN_NAME"), cli.pub_addr);
+
     loop{
 
         let start = Instant::now();

@@ -22,7 +22,7 @@ fn main() -> anyhow::Result<()>{
     let context = zmq::Context::new();
     let socket = context.socket(zmq::SUB)?;
     socket.bind(&cli.sub_addr)?;
-    println!("{}:: binding subscriber to {}", env!("CARGO_BIN_NAME"), cli.sub_addr);
+    println!("{}:: binding subscriber to {}\n", env!("CARGO_BIN_NAME"), cli.sub_addr);
 
     // Subscribe to all messages
     socket.set_subscribe(b"")?;
