@@ -21,7 +21,7 @@ fn main(){
     let sender_4 = sender.clone();
 
     // Arc : shared ownership between threads
-    // Barrier : wait for (n) threads
+    // Barrier : wait for (n) threads so they're time aligned
     let num_threads : usize = 4;
     let barrier = Arc::new(Barrier::new(num_threads));
     let barrier_1 = barrier.clone();
@@ -34,9 +34,6 @@ fn main(){
     let stop_2 = stop.clone();
     let stop_3 = stop.clone();
     let stop_4 = stop.clone();
-
-    let mut sat_frames : HashMap<u64, Vec<Telemetry>> = HashMap::new();
-    let mut car_frames : HashMap<u64, Telemetry> = HashMap::new();
 
     let default_alt = Orbit::geocentric_altitude(Orbit::GEO);
 
@@ -209,68 +206,80 @@ fn main(){
         }
     });
 
+    let algo = thread::spawn(move ||{
+
+        let mut sat_frames : HashMap<u64, Vec<Telemetry>> = HashMap::new();
+        let mut car_frames : HashMap<u64, Telemetry> = HashMap::new();
+
+        // receiver.recv waits forever until the next message
+        // receiver.try_recv will exit immediately if there isn't a new message
+        while let Ok(msg) = receiver.recv(){
+            let frame = match msg{ 
+                util::Telemetry::SATELLITE { id: _, x: _, y: _, t: _, r: _, frame} =>{
+                    //println!("TM from Satellite {}", msg);
+                    sat_frames.entry(frame).or_default().push(msg);
+                    frame
+                },
+                util::Telemetry::VEHICLE { x , y , fuel , t , frame } => {
+                    //println!("TM from Vehicle {}", msg);
+                    let global_tm = util::Telemetry::VEHICLE { x: x + orbit::EARTH_RADIUS_AVG, y, fuel, t, frame };
+                    car_frames.insert(frame, global_tm);
+                    frame
+                }
+            };
+
+            // Check whether this frame is ready
+            // frame comes from the matched message
+            if let Some(sats) = sat_frames.get(&frame){
+                
+                if sats.len() == 3{
+
+                    let mut trilateration_inputs : Vec<Telemetry> = Vec::new();
+
+                    if let Some(car) = car_frames.get(&frame) {
+
+                        let car_pos = if let util::Telemetry::VEHICLE { x, y, .. } = car{
+                            (*x, *y)
+                        }else{
+                            util::NULL
+                        };
+                    
+                        for sat in sats {
+                            if let util::Telemetry::SATELLITE { id, x, y, t, r: _ , frame } = sat {
+                                let sat_pos = (*x, *y);
+                                let r_calc = util::compute_2_d_range(&sat_pos, &car_pos);
+                                trilateration_inputs.push(util::Telemetry::SATELLITE { id : *id, x: *x, y: *y, t: *t, r: r_calc, frame: *frame });
+                            }
+                        }
+                    
+                        if trilateration_inputs.len() == 3 {
+                            let (mut x_est, y_est) = util::Telemetry::compute_trilateration(&trilateration_inputs);
+                            x_est -= orbit::EARTH_RADIUS_AVG;
+                            println!("Frame:{}, Trilateration resulted in x={x_est}, y={y_est}", frame);
+                        }
+
+                        // Done
+                        sat_frames.remove(&frame);
+                        car_frames.remove(&frame);
+
+                    }
+                }
+            }
+
+        }
+
+    });
+
     // Wait for each thread to finish
     sim1.join().unwrap();
     sim2.join().unwrap();
     sim3.join().unwrap();
     sim4.join().unwrap();
 
-    println!("TEST 2: Output telemetry");
+    // This needs to be done otherwise receiver.try_recv() may wait forever
+    // since the original sender is still alive
+    drop(sender);
 
-    // receiver.recv waits forever until the next message
-    // receiver.try_recv will exit immediately if there isn't a new message
-    while let Ok(msg) = receiver.try_recv(){
-        match msg{ 
-            util::Telemetry::SATELLITE { id: _, x: _, y: _, t: _, r: _, frame} =>{
-                //println!("TM from Satellite {}", msg);
-                sat_frames.entry(frame).or_default().push(msg)
-            },
-            util::Telemetry::VEHICLE { x , y , fuel , t , frame } => {
-                //println!("TM from Vehicle {}", msg);
-                let global_tm = util::Telemetry::VEHICLE { x: x + orbit::EARTH_RADIUS_AVG, y, fuel, t, frame };
-                car_frames.insert(frame, global_tm);
-            }
-        }
-    }
-
-    for (frame, sats) in &sat_frames{
-
-        if sats.len() != 3{
-            println!("This doesn't have 3 elements!");
-        }
-
-        //println!("sat_1={} ", sats[0]);
-        //println!("sat_2={} ", sats[1]);
-        //println!("sat_3={} ", sats[2]);
-
-        let mut trilateration_inputs : Vec<Telemetry> = Vec::new();
-
-        let car = car_frames.get(frame);
-        if car.is_some(){
-            //println!("car tm = {}", car.unwrap());
-
-            let car_pos = if let util::Telemetry::VEHICLE { x, y, .. } = car.unwrap(){
-                (*x, *y)
-            }else{
-                util::NULL
-            };
-
-            for sat in sats {
-                if let util::Telemetry::SATELLITE { id, x, y, t, r: _ , frame } = sat {
-                    let sat_pos = (*x, *y);
-                    let r_calc = util::compute_2_d_range(&sat_pos, &car_pos);
-                    trilateration_inputs.push(util::Telemetry::SATELLITE { id : *id, x: *x, y: *y, t: *t, r: r_calc, frame: *frame });
-                }
-            }
-
-            if trilateration_inputs.len() == 3 {
-                let (mut x_est, y_est) = util::Telemetry::compute_trilateration(&trilateration_inputs);
-                x_est -= orbit::EARTH_RADIUS_AVG;
-                println!("Frame:{}, Trilateration resulted in x={x_est}, y={y_est}", frame);
-            }
-
-        }
-
-    }
+    algo.join().unwrap();
 
 }
