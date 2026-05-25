@@ -97,10 +97,10 @@ impl Satellite{
         self.r = rel_pos.0.hypot(rel_pos.1);
     }
 
-    pub fn initialize(&mut self, orbit_type : Orbit, rotation_angle : f64){
+    pub fn initialize(&mut self, orbit_type : Orbit, phase_angle : f64){
 
         // Angle (out of 360) along the assumed circular orbit
-        let angle_rad = rotation_angle.to_radians();
+        let angle_rad = phase_angle.to_radians();
 
         let v = (0.0, Orbit::compute_orbtial_velocity(orbit_type));
 
