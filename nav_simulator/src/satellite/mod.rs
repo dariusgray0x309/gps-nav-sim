@@ -1,5 +1,5 @@
 pub mod orbit;
-use crate::Orbit;
+use crate::satellite::orbit::Orbit;
 
 #[derive(Default)]
 #[allow(dead_code)]
@@ -164,6 +164,7 @@ impl Satellite{
         theta = (self.y.atan2(self.x)).to_degrees();
 
         if self.logging{
+            println!("----Updated Values----");
             println!("Acceleration components = x = {}, y = {}", acc.0, acc.1);
             println!("Velocity components = x = {}, y = {}", self.vx, self.vy);
             println!("Position components = x = {}, y = {}", self.x, self.y);
