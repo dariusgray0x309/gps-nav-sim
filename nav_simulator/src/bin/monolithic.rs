@@ -1,12 +1,10 @@
-mod satellite;
-mod vehicle;
-mod util;
-
-use satellite::orbit::*;
-
-use crate::satellite::{Satellite, orbit};
-
-use crate::util::*;
+use nav_simulator::satellite::Satellite;
+use nav_simulator::satellite::orbit;
+use nav_simulator::satellite::orbit::Orbit;
+use nav_simulator::util;
+use nav_simulator::util::Populate;
+use nav_simulator::util::Telemetry;
+use nav_simulator::vehicle;
 
 #[allow(unused_imports)]
 use std::{thread, time::Duration, collections::HashMap};
@@ -221,14 +219,14 @@ fn main(){
         // receiver.try_recv will exit immediately if there isn't a new message
         while let Ok(msg) = receiver.recv(){
             let frame = match msg{ 
-                util::Telemetry::SATELLITE { id: _, x: _, y: _, t: _, r: _, frame} =>{
+                Telemetry::SATELLITE { id: _, x: _, y: _, t: _, r: _, frame} =>{
                     //println!("TM from Satellite {}", msg);
                     sat_frames.entry(frame).or_default().push(msg);
                     frame
                 },
-                util::Telemetry::VEHICLE { x , y , fuel , t , frame } => {
+                Telemetry::VEHICLE { x , y , fuel , t , frame } => {
                     //println!("TM from Vehicle {}", msg);
-                    let global_tm = util::Telemetry::VEHICLE { x: x + orbit::EARTH_RADIUS_AVG, y, fuel, t, frame };
+                    let global_tm = Telemetry::VEHICLE { x: x + orbit::EARTH_RADIUS_AVG, y, fuel, t, frame };
                     car_frames.insert(frame, global_tm);
                     frame
                 }
@@ -244,22 +242,22 @@ fn main(){
 
                     if let Some(car) = car_frames.get(&frame) {
 
-                        let car_pos = if let util::Telemetry::VEHICLE { x, y, .. } = car{
+                        let car_pos = if let Telemetry::VEHICLE { x, y, .. } = car{
                             (*x, *y)
                         }else{
                             util::NULL
                         };
                     
                         for sat in sats {
-                            if let util::Telemetry::SATELLITE { id, x, y, t, r: _ , frame } = sat {
+                            if let Telemetry::SATELLITE { id, x, y, t, r: _ , frame } = sat {
                                 let sat_pos = (*x, *y);
                                 let r_calc = util::compute_2_d_range(&sat_pos, &car_pos);
-                                trilateration_inputs.push(util::Telemetry::SATELLITE { id : *id, x: *x, y: *y, t: *t, r: r_calc, frame: *frame });
+                                trilateration_inputs.push(Telemetry::SATELLITE { id : *id, x: *x, y: *y, t: *t, r: r_calc, frame: *frame });
                             }
                         }
                     
                         if trilateration_inputs.len() == 3 {
-                            let (mut x_est, y_est) = util::Telemetry::compute_trilateration(&trilateration_inputs);
+                            let (mut x_est, y_est) = Telemetry::compute_trilateration(&trilateration_inputs);
                             x_est -= orbit::EARTH_RADIUS_AVG;
                             println!("Frame:{}, Trilateration resulted in x={x_est}, y={y_est}", frame);
                         }
