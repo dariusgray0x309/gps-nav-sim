@@ -60,20 +60,20 @@ fn main(){
         sat1.set_position((default_alt, 0.0));
         loop{
 
-            println!("Sat 1 updating");
+            //println!("Sat 1 updating");
             sat1.update(step_size);
 
-            println!("Sat 1 populating tm");
+            //println!("Sat 1 populating tm");
             let tm = sat1.populate();
             //thread::sleep(Duration::from_millis(1000));
 
-            println!("Barrier 1 (Sat 1) waiting");
+            //println!("Barrier 1 (Sat 1) waiting");
             barrier_1.wait();
 
-            println!("Sender 1 (Sat 1) tm sending");
+            //println!("Sender 1 (Sat 1) tm sending");
             sender_1.send(tm).unwrap();
 
-            println!("Stop 1 (Sat 1) storing true");
+            //println!("Stop 1 (Sat 1) storing true");
             if sat1.timestamp() >= stop_time {
                 stop_1.store(true, Ordering::Relaxed);
             }
@@ -81,7 +81,7 @@ fn main(){
             // Everyone gets a chance to set stop
             barrier_1.wait();
 
-            println!("Stop 1 (Sat 1) breaking loop");
+            //println!("Stop 1 (Sat 1) breaking loop");
             if stop_1.load(Ordering::Relaxed){
                 break;
             }
@@ -97,20 +97,20 @@ fn main(){
         sat2.initialize(Orbit::GEO, 30.0);
         loop {
 
-            println!("Sat 2 updating");
+            //println!("Sat 2 updating");
             sat2.update(step_size);
 
-            println!("Sat 2 populating tm");
+            //println!("Sat 2 populating tm");
             let tm = sat2.populate();
             //thread::sleep(Duration::from_millis(1000));
 
-            println!("Barrier 2 (Sat 2) waiting");
+            //println!("Barrier 2 (Sat 2) waiting");
             barrier_2.wait();
 
-            println!("Sender 2 (Sat 2) tm sending");
+            //println!("Sender 2 (Sat 2) tm sending");
             sender_2.send(tm).unwrap();
 
-            println!("Stop 2 (Sat 2) storing true");
+            //println!("Stop 2 (Sat 2) storing true");
             if sat2.timestamp() >= stop_time {
                 stop_2.store(true, Ordering::Relaxed);
             }
@@ -118,7 +118,7 @@ fn main(){
             // Everyone gets a chance to set stop
             barrier_2.wait();
 
-            println!("Stop 2 (Sat 2) breaking loop");
+            //println!("Stop 2 (Sat 2) breaking loop");
             if stop_2.load(Ordering::Relaxed){
                 break;
             }
@@ -134,28 +134,28 @@ fn main(){
         sat3.initialize(Orbit::GEO, 60.0);
         loop{
 
-            println!("Sat 3 updating");
+            //println!("Sat 3 updating");
             sat3.update(step_size);
 
-            println!("Sat 3 populating tm");
+            //println!("Sat 3 populating tm");
             let tm = sat3.populate();
             //thread::sleep(Duration::from_millis(1000));
 
-            println!("Barrier 3 (Sat 3) waiting");
+            //println!("Barrier 3 (Sat 3) waiting");
             barrier_3.wait();
 
-            println!("Sender 3 (Sat 3) tm sending");
+            //println!("Sender 3 (Sat 3) tm sending");
             sender_3.send(tm).unwrap();
 
             if sat3.timestamp() >= stop_time{
-                println!("Stop 3 (Sat 3) storing true");
+                //println!("Stop 3 (Sat 3) storing true");
                 stop_3.store(true, Ordering::Relaxed);
             }
 
             // Everyone gets a chance to set stop
             barrier_3.wait();
 
-            println!("Stop 3 (Sat 3) breaking loop");
+            //println!("Stop 3 (Sat 3) breaking loop");
             if stop_3.load(Ordering::Relaxed){
                 break;
             }
@@ -180,28 +180,28 @@ fn main(){
 
         loop{
 
-            println!("Car updating");
+            //println!("Car updating");
             car.update(step_size);
 
-            println!("Car populating tm");
+            //println!("Car populating tm");
             let tm = car.populate();
             //thread::sleep(Duration::from_millis(1000));
 
-            println!("Barrier 4 (Car) waiting");
+            //println!("Barrier 4 (Car) waiting");
             barrier_4.wait();
 
-            println!("Sender 4 (Car) tm sending");
+            //println!("Sender 4 (Car) tm sending");
             sender_4.send(tm).unwrap();
 
             if car.complete(){
-                println!("Stop 4 (Car) storing true");
+                //println!("Stop 4 (Car) storing true");
                 stop_4.store(true, Ordering::Relaxed);
             }
 
             // Everyone gets a chance to set stop
             barrier_4.wait();
 
-            println!("Stop 4 (Car) breaking loop");
+            //println!("Stop 4 (Car) breaking loop");
             if stop_4.load(Ordering::Relaxed){
                 break;
             }
