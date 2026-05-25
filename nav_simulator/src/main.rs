@@ -282,7 +282,7 @@ fn main(){
     sim3.join().unwrap();
     sim4.join().unwrap();
 
-    // This needs to be done otherwise receiver.try_recv() may wait forever
+    // This needs to be done otherwise receiver.recv() may wait forever
     // since the original sender is still alive
     drop(sender);
 
