@@ -39,6 +39,8 @@ fn main(){
 
     let step_size = 0.01;
 
+    let logging_enabled = false;
+
     // long pause for debugging
     //thread::sleep(Duration::from_millis(10000));
 
@@ -54,6 +56,7 @@ fn main(){
         let mut sat1 = Satellite::default();
         sat1.set_id(1);
         sat1.set_position((default_alt, 0.0));
+        sat1.set_logging_enabled(logging_enabled);
         sat1.initialize(Orbit::GEO, 0.0);
         loop{
 
@@ -91,6 +94,7 @@ fn main(){
         let mut sat2 = Satellite::default();
         sat2.set_id(2);
         sat2.set_position((default_alt, 0.0));
+        sat2.set_logging_enabled(logging_enabled);
         sat2.initialize(Orbit::GEO, 30.0);
         loop {
 
@@ -128,6 +132,7 @@ fn main(){
         let mut sat3 = Satellite::default();
         sat3.set_id(3);
         sat3.set_position((default_alt, 0.0));
+        sat3.set_logging_enabled(logging_enabled);
         sat3.initialize(Orbit::GEO, 60.0);
         loop{
 
@@ -173,6 +178,7 @@ fn main(){
         car.add_waypoint(&(105.0, 155.0));
         car.add_waypoint(&(105.0, 185.0));
         car.add_waypoint(&(135.0, 185.0));
+        car.set_logging_enabled(logging_enabled);
         car.initialize();        
 
         loop{

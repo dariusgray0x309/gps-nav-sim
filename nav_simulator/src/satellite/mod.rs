@@ -13,7 +13,8 @@ pub struct Satellite{
     timestamp : f64,
     theta     : f64,
     frame     : u64,
-    init      : bool
+    init      : bool,
+    logging   : bool
 }
 
 #[allow(dead_code)]
@@ -58,6 +59,10 @@ impl Satellite{
 
     pub fn set_frame(&mut self, input : u64){
         self.frame = input;
+    }
+
+    pub fn set_logging_enabled(&mut self, input : bool){
+        self.logging = input;
     }
 
     pub fn compute_trilateration(sat1 : &Satellite, sat2 : &Satellite, sat3 : &Satellite) -> (f64, f64){
@@ -120,44 +125,50 @@ impl Satellite{
         // Initialization complete
         self.init = true;
 
-        println!("----Initial Values----");
-        println!("Position components = x = {}, y = {}", self.x, self.y);
-        println!("Velocity components = x = {}, y = {}", self.vx, self.vy);
-        println!("Angle = {} degrees\n", self.theta.to_degrees());
+        if self.logging{
+            println!("----Initial Values----");
+            println!("Position components = x = {}, y = {}", self.x, self.y);
+            println!("Velocity components = x = {}, y = {}", self.vx, self.vy);
+            println!("Angle = {} degrees\n", self.theta.to_degrees());
+        }
 
     }
 
     pub fn update(&mut self, dt : f64) {
-
-        println!("Orbit for Satellite #{} @ t = {}", self.id, self.timestamp);
 
         // States
         let mut theta = (self.y.atan2(self.x)).to_degrees();
 
         let original_angle = self.theta;
 
-        println!("----Current Values----");
-        println!("Position components = x = {}, y = {}", self.x, self.y);
-        println!("Velocity components = x = {}, y = {}", self.vx, self.vy);
-        println!("Angle = {theta} degrees\n");
+        if self.logging{
+            println!("Orbit for Satellite #{} @ t = {}", self.id, self.timestamp);
+            println!("----Current Values----");
+            println!("Position components = x = {}, y = {}", self.x, self.y);
+            println!("Velocity components = x = {}, y = {}", self.vx, self.vy);
+            println!("Angle = {theta} degrees\n");
+        }
 
         self.timestamp += dt;
 
         self.frame += 1;
 
         let acc = Orbit::compute_gravitational_acceleration(&self.position());
-        println!("Acceleration components = x = {}, y = {}", acc.0, acc.1);
 
         self.vx += acc.0*dt;
         self.vy += acc.1*dt;
-        println!("Velocity components = x = {}, y = {}", self.vx, self.vy);
-
+        
         self.x += self.vx*dt;
         self.y += self.vy*dt;
-        println!("Position components = x = {}, y = {}", self.x, self.y);
-
+        
         theta = (self.y.atan2(self.x)).to_degrees();
-        println!("Angular difference from starting position = {} degrees\n", (theta - original_angle).abs());
+
+        if self.logging{
+            println!("Acceleration components = x = {}, y = {}", acc.0, acc.1);
+            println!("Velocity components = x = {}, y = {}", self.vx, self.vy);
+            println!("Position components = x = {}, y = {}", self.x, self.y);
+            println!("Angular difference from starting position = {} degrees\n", (theta - original_angle).abs());
+        }
 
     }
 

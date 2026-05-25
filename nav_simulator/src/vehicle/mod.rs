@@ -17,7 +17,8 @@ pub struct Vehicle{
     waypoint_idx  : usize,
     waypoints     : Vec<(f64, f64)>,
     original_v    : f64,
-    original_fuel : f64
+    original_fuel : f64,
+    logging       : bool
 }
 
 #[allow(dead_code)]
@@ -84,6 +85,10 @@ impl Vehicle{
         self.timestamp = input;
     }
 
+    pub fn set_logging_enabled(&mut self, input : bool){
+        self.logging = input;
+    }
+
     pub fn update_heading(&mut self, heading_rate : f64, dt : f64){
         self.psi += heading_rate * dt;
     }
@@ -130,7 +135,9 @@ impl Vehicle{
         }
 
         if self.waypoint_idx >= self.waypoints.len(){
-            println!("Complete");
+            if self.logging{
+                println!("Complete");
+            }
             self.complete = true;
             return;
         }
@@ -142,7 +149,10 @@ impl Vehicle{
         let rel_pos = self.compute_relative_position(&goal);
 
         let distance = rel_pos.0.hypot(rel_pos.1);
-        println!("Total distance from goal = {distance}");
+
+        if self.logging{
+            println!("Total distance from goal = {distance}");
+        }
 
         let mut kp = 0.0;
 
@@ -157,7 +167,9 @@ impl Vehicle{
         }
 
         if distance <= waypoint_radius{
-            println!("Reached waypoint {} out of {}\n", self.waypoint_idx+1, self.waypoints.len());
+            if self.logging{
+                println!("Reached waypoint {} out of {}\n", self.waypoint_idx+1, self.waypoints.len());
+            }
             self.waypoint_idx += 1;
             return;
         }
@@ -169,7 +181,7 @@ impl Vehicle{
 
         self.update_heading(heading_rate, dt);
 
-        if self.psi != 0.0{
+        if self.psi != 0.0 && self.logging{
             println!("Desired heading = {} degrees", desired_heading.to_degrees());
             println!("Current heading = {} degrees", self.psi.to_degrees());
             println!("Turning with heading rate = {} deg/sec", heading_rate.to_degrees());
@@ -185,15 +197,19 @@ impl Vehicle{
         self.update_fuel(dt);
 
         if self.fuel <= 0.0{
-            println!("No more fuel available -- ending simulation");
-            println!("Completed {}% of the path\n", ((self.waypoint_idx) as f64 / self.waypoints.len() as f64) * 100.0);
+            if self.logging{
+                println!("No more fuel available -- ending simulation");
+                println!("Completed {}% of the path\n", ((self.waypoint_idx) as f64 / self.waypoints.len() as f64) * 100.0);
+            }
             return;
         }
 
-        println!("Waypoint {} goal: x = {}, y = {}", self.waypoint_idx + 1, goal.0, goal.1);
-        println!("Current position @t = {}: x = {}, y = {}", self.timestamp, self.x, self.y);
-        println!("Velocity magnitude = {}", self.v);
-        println!("{}% of fuel remaining\n", (self.fuel / self.original_fuel) * 100.0);
+        if self.logging{
+            println!("Waypoint {} goal: x = {}, y = {}", self.waypoint_idx + 1, goal.0, goal.1);
+            println!("Current position @t = {}: x = {}, y = {}", self.timestamp, self.x, self.y);
+            println!("Velocity magnitude = {}", self.v);
+            println!("{}% of fuel remaining\n", (self.fuel / self.original_fuel) * 100.0);
+        }
 
         self.timestamp += dt;
 
