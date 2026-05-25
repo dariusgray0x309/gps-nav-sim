@@ -44,7 +44,7 @@ fn main(){
     // long pause for debugging
     //thread::sleep(Duration::from_millis(10000));
 
-    println!("TEST 1: Orbit simulation");
+    println!("GPS Navigation Simulation");
 
     let stop_time = 20.0;
 
@@ -52,7 +52,7 @@ fn main(){
     // can get deallocated prior to the thread finishing what it needs to do
     // resulting in a dangling reference. The fix is the "move" keyword
     let sim1 = thread::spawn(move ||{
-        println!("Thread 1");
+        //println!("Thread 1");
         let mut sat1 = Satellite::default();
         sat1.set_id(1);
         sat1.set_position((default_alt, 0.0));
@@ -90,7 +90,7 @@ fn main(){
     });
 
     let sim2 = thread::spawn(move ||{
-        println!("Thread 2");
+        //println!("Thread 2");
         let mut sat2 = Satellite::default();
         sat2.set_id(2);
         sat2.set_position((default_alt, 0.0));
@@ -128,7 +128,7 @@ fn main(){
     });
 
     let sim3 = thread::spawn(move ||{
-        println!("Thread 3");
+        //println!("Thread 3");
         let mut sat3 = Satellite::default();
         sat3.set_id(3);
         sat3.set_position((default_alt, 0.0));
@@ -166,7 +166,7 @@ fn main(){
     });
 
     let sim4 = thread::spawn(move ||{
-        println!("Thread 4");
+        //println!("Thread 4");
         let mut car = vehicle::Vehicle::default();
         let goal_position : (f64, f64) = (100.0, 150.0);
         let starting_heading = goal_position.1.atan2(goal_position.0);
