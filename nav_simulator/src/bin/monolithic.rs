@@ -46,6 +46,8 @@ fn main(){
 
     let stop_time = 20.0;
 
+    let sleep_time: u64 = 100;
+
     // Need to pass ownership to the thread because it's possible that sat1
     // can get deallocated prior to the thread finishing what it needs to do
     // resulting in a dangling reference. The fix is the "move" keyword
@@ -63,7 +65,7 @@ fn main(){
 
             //println!("Sat 1 populating tm");
             let tm = sat1.populate();
-            //thread::sleep(Duration::from_millis(1000));
+            thread::sleep(Duration::from_millis(sleep_time));
 
             //println!("Barrier 1 (Sat 1) waiting");
             barrier_1.wait();
@@ -101,7 +103,7 @@ fn main(){
 
             //println!("Sat 2 populating tm");
             let tm = sat2.populate();
-            //thread::sleep(Duration::from_millis(1000));
+            thread::sleep(Duration::from_millis(sleep_time));
 
             //println!("Barrier 2 (Sat 2) waiting");
             barrier_2.wait();
@@ -139,7 +141,7 @@ fn main(){
 
             //println!("Sat 3 populating tm");
             let tm = sat3.populate();
-            //thread::sleep(Duration::from_millis(1000));
+            thread::sleep(Duration::from_millis(sleep_time));
 
             //println!("Barrier 3 (Sat 3) waiting");
             barrier_3.wait();
@@ -186,7 +188,7 @@ fn main(){
 
             //println!("Car populating tm");
             let tm = car.populate();
-            //thread::sleep(Duration::from_millis(1000));
+            thread::sleep(Duration::from_millis(sleep_time));
 
             //println!("Barrier 4 (Car) waiting");
             barrier_4.wait();
