@@ -239,51 +239,35 @@ fn main(){
             println!("This doesn't have 3 elements!");
         }
 
-        println!("sat_1={} ", sats[0]);
-        println!("sat_2={} ", sats[1]);
-        println!("sat_3={} ", sats[2]);
-        //let (x, y) = util::Telemetry::compute_trilateration(sats);
+        //println!("sat_1={} ", sats[0]);
+        //println!("sat_2={} ", sats[1]);
+        //println!("sat_3={} ", sats[2]);
 
-        //println!("Frame:{}, Trilateration resulted in x={x}, y={y}", frame);
+        let mut trilateration_inputs : Vec<Telemetry> = Vec::new();
 
         let car = car_frames.get(frame);
         if car.is_some(){
-            println!("car tm = {}", car.unwrap());
+            //println!("car tm = {}", car.unwrap());
 
-            let sat_1_pos : (f64, f64);
-            if let util::Telemetry::SATELLITE { id , x , y , t , r , frame  } = sats[0]{
-                sat_1_pos = (x, y);
-                println!("Sat {}, x = {}, y = {}, frame = {}", id, x, y, frame);
+            let car_pos = if let util::Telemetry::VEHICLE { x, y, .. } = car.unwrap(){
+                (*x, *y)
+            }else{
+                (0.0, 0.0)
             };
 
-            let sat_2_pos : (f64, f64);
-            if let util::Telemetry::SATELLITE { id , x , y , t , r , frame  } = sats[1]{
-                sat_2_pos = (x, y);
-                println!("Sat {}, x = {}, y = {}, frame = {}", id, x, y, frame);
-            };
+            for sat in sats {
+                if let util::Telemetry::SATELLITE { id , x, y, t , r: _ , frame } = sat {
+                    let sat_pos = (*x, *y);
+                    let r_calc = util::compute_2_d_range(&sat_pos, &car_pos);
+                    trilateration_inputs.push(util::Telemetry::SATELLITE { id : *id, x: *x, y: *y, t: *t, r: r_calc, frame: *frame });
+                }
+            }
 
-            let sat_3_pos : (f64, f64);
-            if let util::Telemetry::SATELLITE { id , x , y , t , r , frame  } = sats[2]{
-                sat_3_pos = (x, y);
-                println!("Sat {}, x = {}, y = {}, frame = {}", id, x, y, frame);
-            };
-
-            let car_pos : (f64, f64);
-            if let util::Telemetry::VEHICLE { x, y, fuel, t, frame } = car.unwrap(){
-                car_pos = (*x, *y);
-                println!("Car x = {}, y = {}, frame = {}", x, y, frame);
-            };
-
-            //let r_1 : f64 = util::compute_2_d_range(&sat_1_pos, &car_pos);
-//
-            //let r_2 : f64 = util::compute_2_d_range(&sat_2_pos, &car_pos);
-//
-            //let r_3 : f64 = util::compute_2_d_range(&sat_3_pos, &car_pos);
-
-            // need to set r_1, r_2, & r_3 back to sats[0], sats[1], & sats[3]
-
-
-            //println!("Frame:{}, Trilateration resulted in x={x}, y={y}", frame);
+            if trilateration_inputs.len() == 3 {
+                let (mut x_est, y_est) = util::Telemetry::compute_trilateration(&trilateration_inputs);
+                x_est -= orbit::EARTH_RADIUS_AVG;
+                println!("Frame:{}, Trilateration resulted in x={x_est}, y={y_est}", frame);
+            }
 
         }
 
