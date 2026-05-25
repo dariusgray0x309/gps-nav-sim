@@ -6,21 +6,21 @@ pub static EMPTY : f64 = 1e-6;
 
 #[derive(Default)]
 pub struct Vehicle{
-    x             : f64,
-    y             : f64,
-    v             : f64,
-    psi           : f64,
-    fuel          : f64,
-    fuel_rate     : f64,
-    timestamp     : f64,
-    frame         : u64,
-    init          : bool,
-    complete      : bool,
-    waypoint_idx  : usize,
-    waypoints     : Vec<(f64, f64)>,
-    original_v    : f64,
-    original_fuel : f64,
-    logging       : bool
+    x               : f64,
+    y               : f64,
+    v               : f64,
+    psi             : f64,
+    fuel            : f64,
+    fuel_efficiency : f64,
+    timestamp       : f64,
+    frame           : u64,
+    init            : bool,
+    complete        : bool,
+    waypoint_idx    : usize,
+    waypoints       : Vec<(f64, f64)>,
+    original_v      : f64,
+    original_fuel   : f64,
+    logging         : bool
 }
 
 #[allow(dead_code)]
@@ -42,8 +42,8 @@ impl Vehicle{
         self.fuel
     }
 
-    pub fn fuel_rate(&self) -> f64{
-        self.fuel_rate
+    pub fn fuel_efficiency(&self) -> f64{
+        self.fuel_efficiency
     }
 
     pub fn timestamp(&self) -> f64{
@@ -79,8 +79,8 @@ impl Vehicle{
         self.fuel = input;
     }
 
-    pub fn set_fuel_rate(&mut self, input : f64){
-        self.fuel_rate = input;
+    pub fn set_fuel_efficiency(&mut self, input : f64){
+        self.fuel_efficiency = input;
     }
 
     pub fn set_timestamp(&mut self, input : f64){
@@ -97,7 +97,7 @@ impl Vehicle{
 
     pub fn update_fuel(&mut self, dt : f64) {
         let distance = self.v * dt;
-        let fuel_used = distance / self.fuel_rate;
+        let fuel_used = distance / self.fuel_efficiency;
         self.fuel -= fuel_used;
     }
 

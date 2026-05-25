@@ -12,6 +12,12 @@ struct Args{
     #[arg(short, long, default_value_t = 35.0)]
     velocity : f64,
 
+    #[arg(short, long, default_value_t = 7.0)]
+    efficiency : f64,
+
+    #[arg(short, long, default_value_t = 55.0)]
+    fuel : f64,
+
     #[arg(short, long, default_value_t = 0.01)]
     dt : f64,
 
@@ -19,7 +25,7 @@ struct Args{
     pub_addr : String
 }
 
-// Example command: cargo run --bin vehicle_node -- --logging
+// Example command: cargo run --bin vehicle_node -- --logging --velocity 35.0 --efficiency 7.0 --fuel 55.0 --dt 0.01
 
 fn main() -> anyhow::Result<()>{
 
@@ -33,9 +39,9 @@ fn main() -> anyhow::Result<()>{
     let goal_position : (f64, f64) = (100.0, 150.0);
     let starting_heading = goal_position.1.atan2(goal_position.0);
     car.set_heading(starting_heading);
-    car.set_velocity(cli.velocity);  // [m/s]
-    car.set_fuel_rate(7.0);  // [m/L]
-    car.set_fuel(55.0);      // [L]
+    car.set_velocity(cli.velocity);          // [m/s]
+    car.set_fuel_efficiency(cli.efficiency); // [m/L]
+    car.set_fuel(cli.fuel);                  // [L]
     car.add_waypoint(&goal_position);
     car.add_waypoint(&(105.0, 155.0));
     car.add_waypoint(&(105.0, 185.0));
@@ -43,7 +49,7 @@ fn main() -> anyhow::Result<()>{
     car.set_logging_enabled(cli.logging);
     car.initialize(); 
 
-    let period = Duration::from_secs_f64(cli.dt * 10.0);
+    let period = Duration::from_secs_f64(cli.dt * 5.0);
 
     loop{
 
