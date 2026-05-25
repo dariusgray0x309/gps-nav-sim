@@ -259,7 +259,7 @@ fn main(){
                         if trilateration_inputs.len() == 3 {
                             let (mut x_est, y_est) = Telemetry::compute_trilateration(&trilateration_inputs);
                             x_est -= orbit::EARTH_RADIUS_AVG;
-                            println!("Frame:{}, Trilateration resulted in x={x_est}, y={y_est}", frame);
+                            println!("Frame:{frame}, Trilateration resulted in x={x_est}, y={y_est}");
                         }
 
                         // Done
