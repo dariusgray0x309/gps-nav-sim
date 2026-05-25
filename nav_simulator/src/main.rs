@@ -4,14 +4,13 @@ mod util;
 
 use satellite::orbit::*;
 
-use crate::satellite::Satellite;
+use crate::satellite::{Satellite, orbit};
 
 use crate::util::*;
 
 #[allow(unused_imports)]
 use std::{thread, time::Duration, collections::HashMap};
-use std::sync::{mpsc, Arc, Barrier};
-
+use std::sync::{Arc, Barrier, mpsc, atomic::{AtomicBool, Ordering}};
 
 fn main(){
 
@@ -19,69 +18,32 @@ fn main(){
     let sender_1 = sender.clone();
     let sender_2 = sender.clone();
     let sender_3 = sender.clone();
+    let sender_4 = sender.clone();
 
     // Arc : shared ownership between threads
     // Barrier : wait for (n) threads
-    let barrier = Arc::new(Barrier::new(3));
+    let num_threads : usize = 4;
+    let barrier = Arc::new(Barrier::new(num_threads));
     let barrier_1 = barrier.clone();
     let barrier_2 = barrier.clone();
     let barrier_3 = barrier.clone();
+    let barrier_4 = barrier.clone();
 
-    let mut frames : HashMap<u64, Vec<Telemetry>> = HashMap::new();
-    
-    let mut sat1 = Satellite::default();
-    let mut sat2 = Satellite::default();
-    let mut sat3 = Satellite::default();
+    let stop = Arc::new(AtomicBool::new(false));
+    let stop_1 = stop.clone();
+    let stop_2 = stop.clone();
+    let stop_3 = stop.clone();
+    let stop_4 = stop.clone();
 
-    sat1.set_id(1);
-    sat2.set_id(2);
-    sat3.set_id(3);
-
-    sat1.set_position((0.0, 100.0));
-    sat2.set_position((100.0, 0.0));
-    sat3.set_position((100.0, 100.0));
-
-    sat1.set_range(67.08);
-    sat2.set_range(80.62);
-    sat3.set_range(92.20);
-
-    println!("TEST 1: Trilateration");
-    let car_position = Satellite::compute_trilateration(&sat1, &sat2, &sat3);
-    println!("Based on the satellite's measurements, the vehicle is at x={}, y={}\n", car_position.0, car_position.1);
+    let mut sat_frames : HashMap<u64, Vec<Telemetry>> = HashMap::new();
+    let mut car_frames : HashMap<u64, Telemetry> = HashMap::new();
 
     let default_alt = Orbit::geocentric_altitude(Orbit::GEO);
 
-    sat1.set_position((default_alt, 0.0));
-    sat2.set_position((default_alt, 0.0));
-    sat3.set_position((default_alt, 0.0));
-
     let step_size = 0.01;
-
-    println!("TEST 2: Vehicle simulation");
-    let mut car = vehicle::Vehicle::default();
-    let goal_position : (f64, f64) = (100.0, 150.0);
-    let starting_heading = goal_position.1.atan2(goal_position.0);
-    car.set_heading(starting_heading);
-    car.set_velocity(35.0);  // [m/s]
-    car.set_fuel_rate(7.0);  // [m/L]
-    car.set_fuel(55.0);      // [L]
-    car.add_waypoint(&goal_position);
-    car.add_waypoint(&(105.0, 155.0));
-    car.add_waypoint(&(105.0, 185.0));
-    car.add_waypoint(&(135.0, 185.0));
-    car.initialize();
-
-    loop{
-        car.update(step_size);
-        if car.complete(){
-            break;
-        }
-    }
 
     // long pause for debugging
     //thread::sleep(Duration::from_millis(10000));
-
-    let last_car_position: (f64, f64) = car.position();
 
     println!("TEST 3: Orbit simulation");
 
@@ -92,52 +54,158 @@ fn main(){
     // resulting in a dangling reference. The fix is the "move" keyword
     let sim1 = thread::spawn(move ||{
         println!("Thread 1");
+        let mut sat1 = Satellite::default();
+        sat1.set_id(1);
         sat1.initialize(Orbit::GEO, 0.0);
+        sat1.set_position((default_alt, 0.0));
         loop{
+
+            //println!("Sat 1 updating");
             sat1.update(step_size);
-            sat1.compute_range(&last_car_position);
+
+            //println!("Sat 1 populating tm");
             let tm = sat1.populate();
             //thread::sleep(Duration::from_millis(1000));
-            sender_1.send(tm).unwrap();
+
+            //println!("Barrier 1 (Sat 1) waiting");
             barrier_1.wait();
 
+            //println!("Sender 1 (Sat 1) tm sending");
+            sender_1.send(tm).unwrap();
+
+            //println!("Stop 1 (Sat 1) storing true");
             if sat1.timestamp() >= stop_time {
+                stop_1.store(true, Ordering::Relaxed);
+            }
+
+            // Everyone gets a chance to set stop
+            barrier_1.wait();
+
+            //println!("Stop 1 (Sat 1) breaking loop");
+            if stop_1.load(Ordering::Relaxed){
                 break;
             }
+
         }
     });
 
     let sim2 = thread::spawn(move ||{
         println!("Thread 2");
-        sat2.initialize(Orbit::GEO, 90.0);
+        let mut sat2 = Satellite::default();
+        sat2.set_id(2);
+        sat2.set_position((default_alt, 0.0));
+        sat2.initialize(Orbit::GEO, 30.0);
         loop {
+
+            //println!("Sat 2 updating");
             sat2.update(step_size);
-            sat2.compute_range(&last_car_position);
+
+            //println!("Sat 2 populating tm");
             let tm = sat2.populate();
             //thread::sleep(Duration::from_millis(1000));
-            sender_2.send(tm).unwrap();
+
+            //println!("Barrier 2 (Sat 2) waiting");
             barrier_2.wait();
 
+            //println!("Sender 2 (Sat 2) tm sending");
+            sender_2.send(tm).unwrap();
+
+            //println!("Stop 2 (Sat 2) storing true");
             if sat2.timestamp() >= stop_time {
+                stop_2.store(true, Ordering::Relaxed);
+            }
+
+            // Everyone gets a chance to set stop
+            barrier_2.wait();
+
+            //println!("Stop 2 (Sat 2) breaking loop");
+            if stop_2.load(Ordering::Relaxed){
                 break;
             }
+
         }
     });
 
     let sim3 = thread::spawn(move ||{
         println!("Thread 3");
-        sat3.initialize(Orbit::GEO, 180.0);
+        let mut sat3 = Satellite::default();
+        sat3.set_id(3);
+        sat3.set_position((default_alt, 0.0));
+        sat3.initialize(Orbit::GEO, 60.0);
         loop{
+
+            //println!("Sat 3 updating");
             sat3.update(step_size);
-            sat3.compute_range(&last_car_position);
+
+            //println!("Sat 3 populating tm");
             let tm = sat3.populate();
             //thread::sleep(Duration::from_millis(1000));
-            sender_3.send(tm).unwrap();
+
+            //println!("Barrier 3 (Sat 3) waiting");
             barrier_3.wait();
 
+            //println!("Sender 3 (Sat 3) tm sending");
+            sender_3.send(tm).unwrap();
+
             if sat3.timestamp() >= stop_time{
+                //println!("Stop 3 (Sat 3) storing true");
+                stop_3.store(true, Ordering::Relaxed);
+            }
+
+            // Everyone gets a chance to set stop
+            barrier_3.wait();
+
+            //println!("Stop 3 (Sat 3) breaking loop");
+            if stop_3.load(Ordering::Relaxed){
                 break;
             }
+
+        }
+    });
+
+    let sim4 = thread::spawn(move ||{
+        println!("Thread 4");
+        let mut car = vehicle::Vehicle::default();
+        let goal_position : (f64, f64) = (100.0, 150.0);
+        let starting_heading = goal_position.1.atan2(goal_position.0);
+        car.set_heading(starting_heading);
+        car.set_velocity(35.0);  // [m/s]
+        car.set_fuel_rate(7.0);  // [m/L]
+        car.set_fuel(55.0);      // [L]
+        car.add_waypoint(&goal_position);
+        car.add_waypoint(&(105.0, 155.0));
+        car.add_waypoint(&(105.0, 185.0));
+        car.add_waypoint(&(135.0, 185.0));
+        car.initialize();        
+
+        loop{
+
+            //println!("Car updating");
+            car.update(step_size);
+
+            //println!("Car populating tm");
+            let tm = car.populate();
+            //thread::sleep(Duration::from_millis(1000));
+
+            //println!("Barrier 4 (Car) waiting");
+            barrier_4.wait();
+
+            //println!("Sender 4 (Car) tm sending");
+            sender_4.send(tm).unwrap();
+
+            if car.complete(){
+                //println!("Stop 4 (Car) storing true");
+                stop_4.store(true, Ordering::Relaxed);
+            }
+
+            // Everyone gets a chance to set stop
+            barrier_4.wait();
+
+            //println!("Stop 4 (Car) breaking loop");
+            if stop_4.load(Ordering::Relaxed){
+                break;
+            }
+
         }
     });
 
@@ -145,28 +213,64 @@ fn main(){
     sim1.join().unwrap();
     sim2.join().unwrap();
     sim3.join().unwrap();
+    sim4.join().unwrap();
 
     println!("TEST 4: Output telemetry");
 
     // receiver.recv waits forever until the next message
     // receiver.try_recv will exit immediately if there isn't a new message
     while let Ok(msg) = receiver.try_recv(){
-        if let util::Telemetry::SATELLITE { id: _, x: _, y: _, t: _, r: _, frame} = msg{
-            //println!("TM from Satellite {}", msg);
-            frames.entry(frame).or_default().push(msg);
+        match msg{ 
+            util::Telemetry::SATELLITE { id: _, x: _, y: _, t: _, r: _, frame} =>{
+                //println!("TM from Satellite {}", msg);
+                sat_frames.entry(frame).or_default().push(msg)
+            },
+            util::Telemetry::VEHICLE { x , y , fuel , t , frame } => {
+                //println!("TM from Vehicle {}", msg);
+                let global_tm = util::Telemetry::VEHICLE { x: x + orbit::EARTH_RADIUS_AVG, y, fuel, t, frame };
+                car_frames.insert(frame, global_tm);
+            }
         }
     }
 
-    for (key, val) in &frames{
+    for (frame, sats) in &sat_frames{
 
-        if val.len() != 3{
+        if sats.len() != 3{
             println!("This doesn't have 3 elements!");
         }
 
-        //println!("val_1={}, val_2={}, val_3={}", val[0], val[1], val[2]);
-        let (x, y) = util::Telemetry::compute_trilateration(val);
+        //println!("sat_1={} ", sats[0]);
+        //println!("sat_2={} ", sats[1]);
+        //println!("sat_3={} ", sats[2]);
 
-        println!("Frame:{}, Trilateration resulted in x={x}, y={y}", key);
+        let mut trilateration_inputs : Vec<Telemetry> = Vec::new();
+
+        let car = car_frames.get(frame);
+        if car.is_some(){
+            //println!("car tm = {}", car.unwrap());
+
+            let car_pos = if let util::Telemetry::VEHICLE { x, y, .. } = car.unwrap(){
+                (*x, *y)
+            }else{
+                (0.0, 0.0)
+            };
+
+            for sat in sats {
+                if let util::Telemetry::SATELLITE { id , x, y, t , r: _ , frame } = sat {
+                    let sat_pos = (*x, *y);
+                    let r_calc = util::compute_2_d_range(&sat_pos, &car_pos);
+                    trilateration_inputs.push(util::Telemetry::SATELLITE { id : *id, x: *x, y: *y, t: *t, r: r_calc, frame: *frame });
+                }
+            }
+
+            if trilateration_inputs.len() == 3 {
+                let (mut x_est, y_est) = util::Telemetry::compute_trilateration(&trilateration_inputs);
+                x_est -= orbit::EARTH_RADIUS_AVG;
+                println!("Frame:{}, Trilateration resulted in x={x_est}, y={y_est}", frame);
+            }
+
+        }
+
     }
 
 }

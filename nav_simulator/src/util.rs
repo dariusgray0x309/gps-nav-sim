@@ -13,6 +13,12 @@ pub fn wrap_angle(mut input : f64) -> f64{
     input
 }
 
+pub fn compute_2_d_range(first : &(f64, f64), second : &(f64, f64)) -> f64{
+    let x = first.0 - second.0;
+    let y = first.1 - second.1;
+    x.hypot(y)
+}
+
 #[derive(Clone, Copy, Debug)]
 pub enum Telemetry{
     SATELLITE{

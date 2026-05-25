@@ -182,6 +182,8 @@ impl Vehicle{
         self.x += vx * dt;
         self.y += vy * dt;
 
+        self.update_fuel(dt);
+
         if self.fuel <= 0.0{
             println!("No more fuel available -- ending simulation");
             println!("Completed {}% of the path\n", ((self.waypoint_idx) as f64 / self.waypoints.len() as f64) * 100.0);
