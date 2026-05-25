@@ -1,6 +1,7 @@
 use crate::vehicle;
 use crate::satellite;
 use std::fmt;
+use serde::{Serialize, Deserialize};
 
 #[allow(dead_code)]
 pub fn wrap_angle(mut input : f64) -> f64{
@@ -19,7 +20,7 @@ pub fn compute_2_d_range(first : &(f64, f64), second : &(f64, f64)) -> f64{
     x.hypot(y)
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum Telemetry{
     SATELLITE{
         id    : u8,
