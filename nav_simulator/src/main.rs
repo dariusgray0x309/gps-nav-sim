@@ -45,7 +45,7 @@ fn main(){
     // long pause for debugging
     //thread::sleep(Duration::from_millis(10000));
 
-    println!("TEST 3: Orbit simulation");
+    println!("TEST 1: Orbit simulation");
 
     let stop_time = 20.0;
 
@@ -56,8 +56,8 @@ fn main(){
         println!("Thread 1");
         let mut sat1 = Satellite::default();
         sat1.set_id(1);
-        sat1.initialize(Orbit::GEO, 0.0);
         sat1.set_position((default_alt, 0.0));
+        sat1.initialize(Orbit::GEO, 0.0);
         loop{
 
             //println!("Sat 1 updating");
@@ -215,7 +215,7 @@ fn main(){
     sim3.join().unwrap();
     sim4.join().unwrap();
 
-    println!("TEST 4: Output telemetry");
+    println!("TEST 2: Output telemetry");
 
     // receiver.recv waits forever until the next message
     // receiver.try_recv will exit immediately if there isn't a new message
@@ -252,11 +252,11 @@ fn main(){
             let car_pos = if let util::Telemetry::VEHICLE { x, y, .. } = car.unwrap(){
                 (*x, *y)
             }else{
-                (0.0, 0.0)
+                util::NULL
             };
 
             for sat in sats {
-                if let util::Telemetry::SATELLITE { id , x, y, t , r: _ , frame } = sat {
+                if let util::Telemetry::SATELLITE { id, x, y, t, r: _ , frame } = sat {
                     let sat_pos = (*x, *y);
                     let r_calc = util::compute_2_d_range(&sat_pos, &car_pos);
                     trilateration_inputs.push(util::Telemetry::SATELLITE { id : *id, x: *x, y: *y, t: *t, r: r_calc, frame: *frame });

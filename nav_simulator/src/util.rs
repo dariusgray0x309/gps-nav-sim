@@ -38,13 +38,13 @@ pub enum Telemetry{
     }
 }
 
+pub static NULL : (f64, f64) = (0.0, 0.0);
+
 impl Telemetry{
     pub fn compute_trilateration(input : &Vec<Telemetry>) -> (f64, f64){
 
-        let null : (f64, f64) = (0.0, 0.0);
-
         if input.len() != 3 {
-            return null;
+            return NULL;
         }
 
         let mut sats : Vec<satellite::Satellite> = Vec::new();
@@ -62,7 +62,7 @@ impl Telemetry{
         }
 
         if sats.len() == 0{
-            return null;
+            return NULL;
         }
 
         satellite::Satellite::compute_trilateration(&sats[0], &sats[1], &sats[2])
