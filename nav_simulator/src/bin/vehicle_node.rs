@@ -49,7 +49,7 @@ fn main() -> anyhow::Result<()>{
     car.set_logging_enabled(cli.logging);
     car.initialize(); 
 
-    let period = Duration::from_secs_f64(cli.dt * 5.0);
+    let period = Duration::from_secs_f64(cli.dt * 10.0);
 
     println!("{}:: connecting publisher to {}\n", env!("CARGO_BIN_NAME"), cli.pub_addr);
 
