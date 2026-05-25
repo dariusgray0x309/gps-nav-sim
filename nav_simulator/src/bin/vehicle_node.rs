@@ -1,6 +1,6 @@
 use clap::Parser;
 use std::{thread, time::{Duration, Instant}};
-use nav_simulator::vehicle::Vehicle;
+use nav_simulator::vehicle::{self, Vehicle};
 use nav_simulator::util::Populate;
 
 #[derive(Parser, Debug)]
@@ -8,6 +8,9 @@ struct Args{
 
     #[arg(short, long, default_value_t = false)]
     logging : bool,
+
+    #[arg(short, long, default_value_t = 35.0)]
+    velocity : f64,
 
     #[arg(short, long, default_value_t = 0.01)]
     dt : f64,
@@ -30,7 +33,7 @@ fn main() -> anyhow::Result<()>{
     let goal_position : (f64, f64) = (100.0, 150.0);
     let starting_heading = goal_position.1.atan2(goal_position.0);
     car.set_heading(starting_heading);
-    car.set_velocity(35.0);  // [m/s]
+    car.set_velocity(cli.velocity);  // [m/s]
     car.set_fuel_rate(7.0);  // [m/L]
     car.set_fuel(55.0);      // [L]
     car.add_waypoint(&goal_position);
@@ -53,7 +56,7 @@ fn main() -> anyhow::Result<()>{
         let json = serde_json::to_string(&tm)?;
         socket.send(json.as_bytes(), 0)?;
 
-        if car.complete(){
+        if car.complete() || car.fuel() <= vehicle::EMPTY{
             break;
         }
 

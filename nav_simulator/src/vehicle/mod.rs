@@ -2,6 +2,8 @@ mod controller;
 
 use controller::ProportionalGain;
 
+pub static EMPTY : f64 = 1e-6;
+
 #[derive(Default)]
 pub struct Vehicle{
     x             : f64,

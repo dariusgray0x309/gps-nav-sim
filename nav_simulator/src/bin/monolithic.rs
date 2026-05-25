@@ -194,7 +194,7 @@ fn main(){
             //println!("Sender 4 (Car) tm sending");
             sender_4.send(tm).unwrap();
 
-            if car.complete(){
+            if car.complete() || car.fuel() <= vehicle::EMPTY{
                 //println!("Stop 4 (Car) storing true");
                 stop_4.store(true, Ordering::Relaxed);
             }
