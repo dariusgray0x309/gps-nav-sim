@@ -60,19 +60,29 @@ fn main(){
         sat1.set_position((default_alt, 0.0));
         loop{
 
+            println!("Sat 1 updating");
+            sat1.update(step_size);
+
+            println!("Sat 1 populating tm");
+            let tm = sat1.populate();
+            //thread::sleep(Duration::from_millis(1000));
+
+            println!("Barrier 1 (Sat 1) waiting");
+            barrier_1.wait();
+
+            println!("Sender 1 (Sat 1) tm sending");
+            sender_1.send(tm).unwrap();
+
+            println!("Stop 1 (Sat 1) storing true");
+            if sat1.timestamp() >= stop_time {
+                stop_1.store(true, Ordering::Relaxed);
+            }
+
+            println!("Stop 1 (Sat 1) breaking loop");
             if stop_1.load(Ordering::Relaxed){
                 break;
             }
 
-            sat1.update(step_size);
-            let tm = sat1.populate();
-            //thread::sleep(Duration::from_millis(1000));
-            barrier_1.wait();
-            sender_1.send(tm).unwrap();
-
-            if sat1.timestamp() >= stop_time {
-                break;
-            }
         }
     });
 
@@ -84,19 +94,29 @@ fn main(){
         sat2.initialize(Orbit::GEO, 30.0);
         loop {
 
+            println!("Sat 2 updating");
+            sat2.update(step_size);
+
+            println!("Sat 2 populating tm");
+            let tm = sat2.populate();
+            //thread::sleep(Duration::from_millis(1000));
+
+            println!("Barrier 2 (Sat 2) waiting");
+            barrier_2.wait();
+
+            println!("Sender 2 (Sat 2) tm sending");
+            sender_2.send(tm).unwrap();
+
+            println!("Stop 2 (Sat 2) storing true");
+            if sat2.timestamp() >= stop_time {
+                stop_2.store(true, Ordering::Relaxed);
+            }
+
+            println!("Stop 2 (Sat 2) breaking loop");
             if stop_2.load(Ordering::Relaxed){
                 break;
             }
 
-            sat2.update(step_size);
-            let tm = sat2.populate();
-            //thread::sleep(Duration::from_millis(1000));
-            barrier_2.wait();
-            sender_2.send(tm).unwrap();
-
-            if sat2.timestamp() >= stop_time {
-                break;
-            }
         }
     });
 
@@ -108,19 +128,29 @@ fn main(){
         sat3.initialize(Orbit::GEO, 60.0);
         loop{
 
+            println!("Sat 3 updating");
+            sat3.update(step_size);
+
+            println!("Sat 3 populating tm");
+            let tm = sat3.populate();
+            //thread::sleep(Duration::from_millis(1000));
+
+            println!("Barrier 3 (Sat 3) waiting");
+            barrier_3.wait();
+
+            println!("Sender 3 (Sat 3) tm sending");
+            sender_3.send(tm).unwrap();
+
+            if sat3.timestamp() >= stop_time{
+                println!("Stop 3 (Sat 3) storing true");
+                stop_3.store(true, Ordering::Relaxed);
+            }
+
+            println!("Stop 3 (Sat 3) breaking loop");
             if stop_3.load(Ordering::Relaxed){
                 break;
             }
 
-            sat3.update(step_size);
-            let tm = sat3.populate();
-            //thread::sleep(Duration::from_millis(1000));
-            barrier_3.wait();
-            sender_3.send(tm).unwrap();
-
-            if sat3.timestamp() >= stop_time{
-                break;
-            }
         }
     });
 
@@ -141,19 +171,29 @@ fn main(){
 
         loop{
 
+            println!("Car updating");
+            car.update(step_size);
+
+            println!("Car populating tm");
+            let tm = car.populate();
+            //thread::sleep(Duration::from_millis(1000));
+
+            println!("Barrier 4 (Car) waiting");
+            barrier_4.wait();
+
+            println!("Sender 4 (Car) tm sending");
+            sender_4.send(tm).unwrap();
+
+            if car.complete(){
+                println!("Stop 4 (Car) storing true");
+                stop_4.store(true, Ordering::Relaxed);
+            }
+
+            println!("Stop 4 (Car) breaking loop");
             if stop_4.load(Ordering::Relaxed){
                 break;
             }
 
-            car.update(step_size);
-            let tm = car.populate();
-            //thread::sleep(Duration::from_millis(1000));
-            barrier_4.wait();
-            sender_4.send(tm).unwrap();
-
-            if car.complete(){
-                stop_4.store(true, Ordering::Relaxed);
-            }
         }
     });
 
@@ -170,11 +210,11 @@ fn main(){
     while let Ok(msg) = receiver.try_recv(){
         match msg{ 
             util::Telemetry::SATELLITE { id: _, x: _, y: _, t: _, r: _, frame} =>{
-                println!("TM from Satellite {}", msg);
+                //println!("TM from Satellite {}", msg);
                 sat_frames.entry(frame).or_default().push(msg)
             },
             util::Telemetry::VEHICLE { x , y , fuel , t , frame } => {
-                println!("TM from Vehicle {}", msg);
+                //println!("TM from Vehicle {}", msg);
                 let global_tm = util::Telemetry::VEHICLE { x: x + orbit::EARTH_RADIUS_AVG, y, fuel, t, frame };
                 car_frames.insert(frame, global_tm);
             }
@@ -187,9 +227,9 @@ fn main(){
             println!("This doesn't have 3 elements!");
         }
 
-        println!("sat_1={}", sats[0]);
-        println!("sat_2={}", sats[1]);
-        println!("sat_3={}", sats[2]);
+        println!("sat_1={} ", sats[0]);
+        println!("sat_2={} ", sats[1]);
+        println!("sat_3={} ", sats[2]);
         //let (x, y) = util::Telemetry::compute_trilateration(sats);
 
         //println!("Frame:{}, Trilateration resulted in x={x}, y={y}", frame);
@@ -197,7 +237,44 @@ fn main(){
         let car = car_frames.get(frame);
         if car.is_some(){
             println!("car tm = {}", car.unwrap());
+
+            let sat_1_pos : (f64, f64);
+            if let util::Telemetry::SATELLITE { id , x , y , t , r , frame  } = sats[0]{
+                sat_1_pos = (x, y);
+                println!("Sat {}, x = {}, y = {}, frame = {}", id, x, y, frame);
+            };
+
+            let sat_2_pos : (f64, f64);
+            if let util::Telemetry::SATELLITE { id , x , y , t , r , frame  } = sats[1]{
+                sat_2_pos = (x, y);
+                println!("Sat {}, x = {}, y = {}, frame = {}", id, x, y, frame);
+            };
+
+            let sat_3_pos : (f64, f64);
+            if let util::Telemetry::SATELLITE { id , x , y , t , r , frame  } = sats[2]{
+                sat_3_pos = (x, y);
+                println!("Sat {}, x = {}, y = {}, frame = {}", id, x, y, frame);
+            };
+
+            let car_pos : (f64, f64);
+            if let util::Telemetry::VEHICLE { x, y, fuel, t, frame } = car.unwrap(){
+                car_pos = (*x, *y);
+                println!("Car x = {}, y = {}, frame = {}", x, y, frame);
+            };
+
+            //let r_1 : f64 = util::compute_2_d_range(&sat_1_pos, &car_pos);
+//
+            //let r_2 : f64 = util::compute_2_d_range(&sat_2_pos, &car_pos);
+//
+            //let r_3 : f64 = util::compute_2_d_range(&sat_3_pos, &car_pos);
+
+            // need to set r_1, r_2, & r_3 back to sats[0], sats[1], & sats[3]
+
+
+            //println!("Frame:{}, Trilateration resulted in x={x}, y={y}", frame);
+
         }
+
     }
 
 }
