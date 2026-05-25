@@ -78,6 +78,9 @@ fn main(){
                 stop_1.store(true, Ordering::Relaxed);
             }
 
+            // Everyone gets a chance to set stop
+            barrier_1.wait();
+
             println!("Stop 1 (Sat 1) breaking loop");
             if stop_1.load(Ordering::Relaxed){
                 break;
@@ -112,6 +115,9 @@ fn main(){
                 stop_2.store(true, Ordering::Relaxed);
             }
 
+            // Everyone gets a chance to set stop
+            barrier_2.wait();
+
             println!("Stop 2 (Sat 2) breaking loop");
             if stop_2.load(Ordering::Relaxed){
                 break;
@@ -145,6 +151,9 @@ fn main(){
                 println!("Stop 3 (Sat 3) storing true");
                 stop_3.store(true, Ordering::Relaxed);
             }
+
+            // Everyone gets a chance to set stop
+            barrier_3.wait();
 
             println!("Stop 3 (Sat 3) breaking loop");
             if stop_3.load(Ordering::Relaxed){
@@ -188,6 +197,9 @@ fn main(){
                 println!("Stop 4 (Car) storing true");
                 stop_4.store(true, Ordering::Relaxed);
             }
+
+            // Everyone gets a chance to set stop
+            barrier_4.wait();
 
             println!("Stop 4 (Car) breaking loop");
             if stop_4.load(Ordering::Relaxed){
