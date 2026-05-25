@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0.0.7] - 2026-05-25
+### Added
+- Added `lib.rs` to allow for the existing code to be used in the different executables
+- Added `algo_node.rs`, `sat_node.rs`, and `vehicle_node.rs` as the executables for the multi-app version
+- Added `run_sim.sh` which kicks off all the executables
+### Changed
+- Changed `main.rs` to `monolithic.rs` and moved it to the bin directory
+
 ## [0.0.6] - 2026-05-25
 ### Changed
 - Updated `main.rs` to compute the trilateration algorithm from asynchronous data from car and sats 1-3

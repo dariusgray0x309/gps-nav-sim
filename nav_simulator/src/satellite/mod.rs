@@ -1,5 +1,5 @@
 pub mod orbit;
-use crate::Orbit;
+use crate::satellite::orbit::Orbit;
 
 #[derive(Default)]
 #[allow(dead_code)]
@@ -97,10 +97,10 @@ impl Satellite{
         self.r = rel_pos.0.hypot(rel_pos.1);
     }
 
-    pub fn initialize(&mut self, orbit_type : Orbit, rotation_angle : f64){
+    pub fn initialize(&mut self, orbit_type : Orbit, phase_angle : f64){
 
         // Angle (out of 360) along the assumed circular orbit
-        let angle_rad = rotation_angle.to_radians();
+        let angle_rad = phase_angle.to_radians();
 
         let v = (0.0, Orbit::compute_orbtial_velocity(orbit_type));
 
@@ -164,6 +164,7 @@ impl Satellite{
         theta = (self.y.atan2(self.x)).to_degrees();
 
         if self.logging{
+            println!("----Updated Values----");
             println!("Acceleration components = x = {}, y = {}", acc.0, acc.1);
             println!("Velocity components = x = {}, y = {}", self.vx, self.vy);
             println!("Position components = x = {}, y = {}", self.x, self.y);
