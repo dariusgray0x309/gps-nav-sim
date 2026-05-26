@@ -14,6 +14,7 @@ use std::sync::{
 #[allow(unused_imports)]
 use std::{collections::HashMap, thread, time::Duration};
 
+#[allow(clippy::collapsible_if)]
 fn main() {
     let (sender, receiver) = mpsc::channel();
     let sender_1 = sender.clone();
@@ -249,53 +250,49 @@ fn main() {
 
             // Check whether this frame is ready
             // frame comes from the matched message
-            if let Some(sats) = sat_frames.get(&frame) {
+            if let (Some(sats), Some(car)) = (sat_frames.get(&frame), car_frames.get(&frame)) {
                 if sats.len() == 3 {
+                    let car_pos = if let Telemetry::VEHICLE { x, y, .. } = car {
+                        (*x, *y)
+                    } else {
+                        util::NULL
+                    };
+
                     let mut trilateration_inputs: Vec<Telemetry> = Vec::new();
 
-                    if let Some(car) = car_frames.get(&frame) {
-                        let car_pos = if let Telemetry::VEHICLE { x, y, .. } = car {
-                            (*x, *y)
-                        } else {
-                            util::NULL
-                        };
-
-                        for (id, sat) in sats {
-                            if let Telemetry::SATELLITE {
-                                id: _,
-                                x,
-                                y,
-                                t,
-                                r: _,
-                                frame,
-                            } = sat
-                            {
-                                let sat_pos = (*x, *y);
-                                let r_calc = util::compute_2_d_range(&sat_pos, &car_pos);
-                                trilateration_inputs.push(Telemetry::SATELLITE {
-                                    id: *id,
-                                    x: *x,
-                                    y: *y,
-                                    t: *t,
-                                    r: r_calc,
-                                    frame: *frame,
-                                });
-                            }
+                    for (id, sat) in sats {
+                        if let Telemetry::SATELLITE {
+                            id: _,
+                            x,
+                            y,
+                            t,
+                            r: _,
+                            frame,
+                        } = sat
+                        {
+                            let sat_pos = (*x, *y);
+                            let r_calc = util::compute_2_d_range(&sat_pos, &car_pos);
+                            trilateration_inputs.push(Telemetry::SATELLITE {
+                                id: *id,
+                                x: *x,
+                                y: *y,
+                                t: *t,
+                                r: r_calc,
+                                frame: *frame,
+                            });
                         }
-
-                        if trilateration_inputs.len() == 3 {
-                            let (mut x_est, y_est) =
-                                Telemetry::compute_trilateration(&trilateration_inputs);
-                            x_est -= orbit::EARTH_RADIUS_AVG;
-                            println!(
-                                "Frame:{frame}, Trilateration resulted in x={x_est}, y={y_est}"
-                            );
-                        }
-
-                        // Done
-                        sat_frames.remove(&frame);
-                        car_frames.remove(&frame);
                     }
+
+                    if trilateration_inputs.len() == 3 {
+                        let (mut x_est, y_est) =
+                            Telemetry::compute_trilateration(&trilateration_inputs);
+                        x_est -= orbit::EARTH_RADIUS_AVG;
+                        println!("Frame:{frame}, Trilateration resulted in x={x_est}, y={y_est}");
+                    }
+
+                    // Done
+                    sat_frames.remove(&frame);
+                    car_frames.remove(&frame);
                 }
             }
         }

@@ -27,6 +27,7 @@ struct Args {
     pub_addr: String,
 }
 
+#[allow(clippy::collapsible_if)]
 fn main() -> anyhow::Result<()> {
     let cli = Args::parse();
 

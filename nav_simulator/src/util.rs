@@ -69,7 +69,7 @@ impl Telemetry {
             }
         }
 
-        if sats.len() == 0 {
+        if sats.is_empty() {
             return NULL;
         }
 

@@ -12,6 +12,7 @@ struct Args {
 }
 
 #[allow(unreachable_code)]
+#[allow(clippy::collapsible_if)]
 fn main() -> anyhow::Result<()> {
     let cli = Args::parse();
 

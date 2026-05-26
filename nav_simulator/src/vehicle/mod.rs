@@ -111,7 +111,7 @@ impl Vehicle {
     }
 
     pub fn initialize(&mut self) {
-        if self.waypoints.len() == 0 {
+        if self.waypoints.is_empty() {
             println!("No waypoints available for guidance!");
             return;
         }
@@ -140,7 +140,7 @@ impl Vehicle {
             return;
         }
 
-        let heading_rate_limit: f64 = (80.0 as f64).to_radians();
+        let heading_rate_limit: f64 = (80.0_f64).to_radians();
 
         let goal = self.waypoints[self.waypoint_idx];
 
@@ -158,10 +158,10 @@ impl Vehicle {
 
         if distance < 10.0 {
             self.v = distance;
-            kp = ProportionalGain::get_gain(ProportionalGain::FAST);
+            kp = ProportionalGain::get_gain(ProportionalGain::Fast);
         } else {
             self.v = self.original_v;
-            kp = ProportionalGain::get_gain(ProportionalGain::AGGRESSIVE);
+            kp = ProportionalGain::get_gain(ProportionalGain::Aggressive);
         }
 
         if distance <= waypoint_radius {
