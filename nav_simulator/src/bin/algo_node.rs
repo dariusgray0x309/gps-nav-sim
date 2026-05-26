@@ -25,7 +25,7 @@ fn main() -> anyhow::Result<()>{
     // Subscribe to all messages
     socket.set_subscribe(b"")?;
 
-    let mut sat_frames : HashMap<u64, Vec<Telemetry>> = HashMap::new();
+    let mut sat_frames : HashMap<u64, HashMap<u8, Telemetry>> = HashMap::new();
     let mut car_frames : HashMap<u64, Telemetry> = HashMap::new();
 
     loop{
@@ -35,9 +35,9 @@ fn main() -> anyhow::Result<()>{
         let msg: Telemetry = serde_json::from_slice(&bytes)?;
 
         let frame = match msg{ 
-            Telemetry::SATELLITE { id: _, x: _, y: _, t: _, r: _, frame} =>{
+            Telemetry::SATELLITE { id, x: _, y: _, t: _, r: _, frame} =>{
                 //println!("TM from Satellite {}", msg);
-                sat_frames.entry(frame).or_default().push(msg);
+                sat_frames.entry(frame).or_default().insert(id, msg);
                 frame
             },
             Telemetry::VEHICLE { x , y , fuel , t , frame } => {
@@ -61,8 +61,8 @@ fn main() -> anyhow::Result<()>{
 
                 let mut trilateration_inputs : Vec<Telemetry> = Vec::new();
                 
-                for sat in sats {
-                    if let Telemetry::SATELLITE { id, x, y, t, r: _ , frame } = sat {
+                for (id, sat) in sats {
+                    if let Telemetry::SATELLITE { id: _, x, y, t, r: _ , frame } = sat {
                         let sat_pos = (*x, *y);
                         let r_calc = util::compute_2_d_range(&sat_pos, &car_pos);
                         trilateration_inputs.push(Telemetry::SATELLITE { id : *id, x: *x, y: *y, t: *t, r: r_calc, frame: *frame });
