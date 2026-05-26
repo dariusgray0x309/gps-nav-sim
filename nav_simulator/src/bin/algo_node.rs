@@ -12,8 +12,6 @@ struct Args{
     sub_addr : String
 }
 
-// Example command: cargo run --bin algo_node --
-
 #[allow(unreachable_code)]
 fn main() -> anyhow::Result<()>{
 

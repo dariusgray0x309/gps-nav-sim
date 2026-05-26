@@ -25,8 +25,6 @@ struct Args{
     pub_addr : String
 }
 
-// Example command: cargo run --bin vehicle_node -- --logging --velocity 35.0 --efficiency 7.0 --fuel 55.0 --dt 0.01
-
 fn main() -> anyhow::Result<()>{
 
     let cli = Args::parse();

@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0.0.8] - 2026-05-26
+### Changed
+- Removed `run.sh`
+### Added
+-  `docker-compose.yaml`, `Dockerfile`, and `.dockerignore`
+
 ## [0.0.7] - 2026-05-25
 ### Added
 - Added `lib.rs` to allow for the existing code to be used in the different executables
