@@ -1,31 +1,33 @@
 use clap::Parser;
-use std::{thread, time::{Duration, Instant}};
 use nav_simulator::satellite::{Satellite, orbit::Orbit};
 use nav_simulator::util::Populate;
+use std::{
+    thread,
+    time::{Duration, Instant},
+};
 
 #[derive(Parser, Debug)]
-struct Args{
+struct Args {
     #[arg(short, long)] // refers to CLI syntax "short -i" or "long --id"
-    id : u8,
+    id: u8,
 
     #[arg(long, default_value_t = 0.0)]
-    phase_angle : f64,
+    phase_angle: f64,
 
     #[arg(short, long, default_value_t = false)]
-    logging : bool,
+    logging: bool,
 
     #[arg(short, long, default_value_t = 0.01)]
-    dt : f64,
+    dt: f64,
 
     #[arg(short, long)]
-    stop_time : Option<f64>,
+    stop_time: Option<f64>,
 
     #[arg(short, long, default_value_t = String::from("tcp://127.0.0.1:8080"))]
-    pub_addr : String
+    pub_addr: String,
 }
 
-fn main() -> anyhow::Result<()>{
-
+fn main() -> anyhow::Result<()> {
     let cli = Args::parse();
 
     let context = zmq::Context::new();
@@ -40,12 +42,17 @@ fn main() -> anyhow::Result<()>{
     sat.set_logging_enabled(cli.logging);
     sat.initialize(Orbit::GEO, cli.phase_angle);
 
-    println!("{}::Sat_{}:: connecting publisher to {}\n", env!("CARGO_BIN_NAME"), cli.id, cli.pub_addr);
+    println!(
+        "{}::Sat_{}:: connecting publisher to {}\n",
+        env!("CARGO_BIN_NAME"),
+        cli.id,
+        cli.pub_addr
+    );
     thread::sleep(Duration::from_secs(2));
 
     let period = Duration::from_secs_f64(cli.dt * 10.0);
 
-    loop{
+    loop {
         let start = Instant::now();
 
         sat.update(cli.dt);
@@ -55,18 +62,17 @@ fn main() -> anyhow::Result<()>{
         let json = serde_json::to_string(&tm)?;
         socket.send(json.as_bytes(), 0)?;
 
-        if let Some(stop_time) = cli.stop_time{
+        if let Some(stop_time) = cli.stop_time {
             if sat.timestamp() >= stop_time {
                 break;
             }
         }
 
         let elapsed = start.elapsed();
-        if elapsed < period{
+        if elapsed < period {
             thread::sleep(period - elapsed);
         }
     }
 
     Ok(())
-
 }

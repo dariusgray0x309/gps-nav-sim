@@ -3,69 +3,72 @@ use crate::satellite::orbit::Orbit;
 
 #[derive(Default)]
 #[allow(dead_code)]
-pub struct Satellite{
-    id        : u8,
-    x         : f64,
-    y         : f64,
-    r         : f64,
-    vx        : f64,
-    vy        : f64,
-    timestamp : f64,
-    theta     : f64,
-    frame     : u64,
-    init      : bool,
-    logging   : bool
+pub struct Satellite {
+    id: u8,
+    x: f64,
+    y: f64,
+    r: f64,
+    vx: f64,
+    vy: f64,
+    timestamp: f64,
+    theta: f64,
+    frame: u64,
+    init: bool,
+    logging: bool,
 }
 
 #[allow(dead_code)]
-impl Satellite{
-
-    pub fn id(&self) -> u8{
+impl Satellite {
+    pub fn id(&self) -> u8 {
         self.id
     }
 
-    pub fn position(&self) -> (f64, f64){
+    pub fn position(&self) -> (f64, f64) {
         (self.x, self.y)
     }
 
-    pub fn range(&self) -> f64{
+    pub fn range(&self) -> f64 {
         self.r
     }
 
-    pub fn timestamp(&self) -> f64{
+    pub fn timestamp(&self) -> f64 {
         self.timestamp
     }
 
-    pub fn frame(&self) -> u64{
+    pub fn frame(&self) -> u64 {
         self.frame
     }
 
-    pub fn set_position(&mut self, input : (f64, f64)){
+    pub fn set_position(&mut self, input: (f64, f64)) {
         self.x = input.0;
         self.y = input.1;
     }
 
-    pub fn set_range(&mut self, input : f64){
+    pub fn set_range(&mut self, input: f64) {
         self.r = input;
     }
 
-    pub fn set_id(&mut self, input : u8){
+    pub fn set_id(&mut self, input: u8) {
         self.id = input;
     }
 
-    pub fn set_timestamp(&mut self, input : f64){
+    pub fn set_timestamp(&mut self, input: f64) {
         self.timestamp = input;
     }
 
-    pub fn set_frame(&mut self, input : u64){
+    pub fn set_frame(&mut self, input: u64) {
         self.frame = input;
     }
 
-    pub fn set_logging_enabled(&mut self, input : bool){
+    pub fn set_logging_enabled(&mut self, input: bool) {
         self.logging = input;
     }
 
-    pub fn compute_trilateration(sat1 : &Satellite, sat2 : &Satellite, sat3 : &Satellite) -> (f64, f64){
+    pub fn compute_trilateration(
+        sat1: &Satellite,
+        sat2: &Satellite,
+        sat3: &Satellite,
+    ) -> (f64, f64) {
         let x1 = sat1.x;
         let x2 = sat2.x;
         let x3 = sat3.x;
@@ -78,27 +81,25 @@ impl Satellite{
         let r2 = sat2.r;
         let r3 = sat3.r;
 
-        let a = 2.0*(x2 - x1);
-        let b = 2.0*(y2 - y1);
+        let a = 2.0 * (x2 - x1);
+        let b = 2.0 * (y2 - y1);
         let c = r1.powi(2) - r2.powi(2) - x1.powi(2) + x2.powi(2) - y1.powi(2) + y2.powi(2);
-        let d = 2.0*(x3- x2);
-        let e = 2.0*(y3 - y2);
+        let d = 2.0 * (x3 - x2);
+        let e = 2.0 * (y3 - y2);
         let f = r2.powi(2) - r3.powi(2) - x2.powi(2) + x3.powi(2) - y2.powi(2) + y3.powi(2);
 
-        let first = (c*e - f*b) / (e*a - b*d);
-        let second = (c*d - a*f) / (b*d - a*e);
+        let first = (c * e - f * b) / (e * a - b * d);
+        let second = (c * d - a * f) / (b * d - a * e);
 
         (first, second)
-
     }
 
-    pub fn compute_range(&mut self, input : &(f64, f64)){
-        let rel_pos : (f64, f64) = (self.x - input.0, self.y - input.1);
+    pub fn compute_range(&mut self, input: &(f64, f64)) {
+        let rel_pos: (f64, f64) = (self.x - input.0, self.y - input.1);
         self.r = rel_pos.0.hypot(rel_pos.1);
     }
 
-    pub fn initialize(&mut self, orbit_type : Orbit, phase_angle : f64){
-
+    pub fn initialize(&mut self, orbit_type: Orbit, phase_angle: f64) {
         // Angle (out of 360) along the assumed circular orbit
         let angle_rad = phase_angle.to_radians();
 
@@ -125,23 +126,21 @@ impl Satellite{
         // Initialization complete
         self.init = true;
 
-        if self.logging{
+        if self.logging {
             println!("----Initial Values----");
             println!("Position components = x = {}, y = {}", self.x, self.y);
             println!("Velocity components = x = {}, y = {}", self.vx, self.vy);
             println!("Angle = {} degrees\n", self.theta.to_degrees());
         }
-
     }
 
-    pub fn update(&mut self, dt : f64) {
-
+    pub fn update(&mut self, dt: f64) {
         // States
         let mut theta = (self.y.atan2(self.x)).to_degrees();
 
         let original_angle = self.theta;
 
-        if self.logging{
+        if self.logging {
             println!("Orbit for Satellite #{} @ t = {}", self.id, self.timestamp);
             println!("----Current Values----");
             println!("Position components = x = {}, y = {}", self.x, self.y);
@@ -155,22 +154,23 @@ impl Satellite{
 
         let acc = Orbit::compute_gravitational_acceleration(&self.position());
 
-        self.vx += acc.0*dt;
-        self.vy += acc.1*dt;
-        
-        self.x += self.vx*dt;
-        self.y += self.vy*dt;
-        
+        self.vx += acc.0 * dt;
+        self.vy += acc.1 * dt;
+
+        self.x += self.vx * dt;
+        self.y += self.vy * dt;
+
         theta = (self.y.atan2(self.x)).to_degrees();
 
-        if self.logging{
+        if self.logging {
             println!("----Updated Values----");
             println!("Acceleration components = x = {}, y = {}", acc.0, acc.1);
             println!("Velocity components = x = {}, y = {}", self.vx, self.vy);
             println!("Position components = x = {}, y = {}", self.x, self.y);
-            println!("Angular difference from starting position = {} degrees\n", (theta - original_angle).abs());
+            println!(
+                "Angular difference from starting position = {} degrees\n",
+                (theta - original_angle).abs()
+            );
         }
-
     }
-
 }
