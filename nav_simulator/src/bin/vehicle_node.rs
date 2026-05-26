@@ -50,6 +50,7 @@ fn main() -> anyhow::Result<()>{
     let period = Duration::from_secs_f64(cli.dt * 10.0);
 
     println!("{}:: connecting publisher to {}\n", env!("CARGO_BIN_NAME"), cli.pub_addr);
+    thread::sleep(Duration::from_secs(2));
 
     loop{
 

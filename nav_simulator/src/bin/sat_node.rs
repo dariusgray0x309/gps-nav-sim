@@ -41,6 +41,7 @@ fn main() -> anyhow::Result<()>{
     sat.initialize(Orbit::GEO, cli.phase_angle);
 
     println!("{}::Sat_{}:: connecting publisher to {}\n", env!("CARGO_BIN_NAME"), cli.id, cli.pub_addr);
+    thread::sleep(Duration::from_secs(2));
 
     let period = Duration::from_secs_f64(cli.dt * 10.0);
 
