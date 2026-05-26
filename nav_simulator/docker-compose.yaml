@@ -9,21 +9,21 @@ services:
   sat1:
     image: nav-simulator:latest
     container_name: sat1
-    command: ["/usr/local/bin/sat_node", "--id", "1", "--phase-angle", "0.0", "--stop-time", "20.0", "--pub-addr", "tcp://algo:8080"]
+    command: ["/usr/local/bin/sat_node", "--id", "1", "--phase-angle", "0.0", "--pub-addr", "tcp://algo:8080"]
     depends_on:
       - algo
 
   sat2:
     image: nav-simulator:latest
     container_name: sat2
-    command: ["/usr/local/bin/sat_node", "--id", "2", "--phase-angle", "30.0", "--stop-time", "20.0", "--pub-addr", "tcp://algo:8080"]
+    command: ["/usr/local/bin/sat_node", "--id", "2", "--phase-angle", "30.0", "--pub-addr", "tcp://algo:8080"]
     depends_on:
       - algo
 
   sat3:
     image: nav-simulator:latest
     container_name: sat3
-    command: ["/usr/local/bin/sat_node", "--id", "3", "--phase-angle", "60.0", "--stop-time", "20.0", "--pub-addr", "tcp://algo:8080"]
+    command: ["/usr/local/bin/sat_node", "--id", "3", "--phase-angle", "60.0", "--pub-addr", "tcp://algo:8080"]
     depends_on:
       - algo
 
