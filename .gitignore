@@ -1,3 +1,4 @@
 nav_simulator/target/
 .vscode
-.venv
+nav_simulator/.venv
+nav_simulator/sim_data
