@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [0.0.9] - 2026-05-27
+### Added
+- Added python code to subscribe to the algo node and write the data to a file
+### Changed
+- Updated `algo_node.rs` so that it can publish telemetry data
+- Updated `docker-compose.yaml` to include the new python image
+
 ## [0.0.8] - 2026-05-26
 ### Changed
 - Removed `run.sh`

@@ -1,7 +1,7 @@
 use clap::Parser;
 use nav_simulator::satellite::orbit;
-use nav_simulator::util;
-use nav_simulator::util::Telemetry;
+use nav_simulator::util::{self, OutputMessage};
+use nav_simulator::util::{OutputMessageBuilder, Telemetry};
 
 use std::collections::HashMap;
 
@@ -9,6 +9,9 @@ use std::collections::HashMap;
 struct Args {
     #[arg(short, long, default_value_t = String::from("tcp://127.0.0.1:8080"))]
     sub_addr: String,
+
+    #[arg(short, long, default_value_t = String::from("tcp://127.0.0.1:8081"))]
+    pub_addr: String,
 }
 
 #[allow(unreachable_code)]
@@ -17,8 +20,8 @@ fn main() -> anyhow::Result<()> {
     let cli = Args::parse();
 
     let context = zmq::Context::new();
-    let socket = context.socket(zmq::SUB)?;
-    socket.bind(&cli.sub_addr)?;
+    let subscriber = context.socket(zmq::SUB)?;
+    subscriber.bind(&cli.sub_addr)?;
     println!(
         "{}:: binding subscriber to {}\n",
         env!("CARGO_BIN_NAME"),
@@ -26,14 +29,23 @@ fn main() -> anyhow::Result<()> {
     );
 
     // Subscribe to all messages
-    socket.set_subscribe(b"")?;
+    subscriber.set_subscribe(b"")?;
+
+    // Create a publisher for those who want to consume the data
+    let publisher = context.socket(zmq::PUB)?;
+    publisher.bind(&cli.pub_addr)?;
+    println!(
+        "{}:: binding publisher to {}\n",
+        env!("CARGO_BIN_NAME"),
+        cli.pub_addr
+    );
 
     let mut sat_frames: HashMap<u64, HashMap<u8, Telemetry>> = HashMap::new();
     let mut car_frames: HashMap<u64, Telemetry> = HashMap::new();
 
     loop {
         // Get the raw zmq bytes and deserialize into the Telemetry enum
-        let bytes = socket.recv_bytes(0)?;
+        let bytes = subscriber.recv_bytes(0)?;
         let msg: Telemetry = serde_json::from_slice(&bytes)?;
 
         let frame = match msg {
@@ -72,8 +84,26 @@ fn main() -> anyhow::Result<()> {
         // Check whether this frame is ready
         // frame comes from the matched message
         if let (Some(sats), Some(car)) = (sat_frames.get(&frame), car_frames.get(&frame)) {
+            let mut output_info: Vec<OutputMessage> = Vec::new();
             if sats.len() == 3 {
-                let car_pos = if let Telemetry::VEHICLE { x, y, .. } = car {
+                let car_pos = if let Telemetry::VEHICLE {
+                    x,
+                    y,
+                    fuel,
+                    t,
+                    frame,
+                } = car
+                {
+                    let vehicle_msg = OutputMessageBuilder::default()
+                        .x(*x)
+                        .y(*y)
+                        .t(*t)
+                        .which("Vehicle")
+                        .frame(*frame)
+                        .fuel(*fuel)
+                        .build();
+
+                    output_info.push(vehicle_msg);
                     (*x, *y)
                 } else {
                     continue;
@@ -93,6 +123,18 @@ fn main() -> anyhow::Result<()> {
                     {
                         let sat_pos = (*x, *y);
                         let r_calc = util::compute_2_d_range(&sat_pos, &car_pos);
+
+                        let sat_msg = OutputMessageBuilder::default()
+                            .id(*id)
+                            .x(*x)
+                            .y(*y)
+                            .r(r_calc)
+                            .t(*t)
+                            .which("Satellite")
+                            .frame(*frame)
+                            .build();
+
+                        output_info.push(sat_msg);
                         trilateration_inputs.push(Telemetry::SATELLITE {
                             id: *id,
                             x: *x,
@@ -108,12 +150,26 @@ fn main() -> anyhow::Result<()> {
                     let (mut x_est, y_est) =
                         Telemetry::compute_trilateration(&trilateration_inputs);
                     x_est -= orbit::EARTH_RADIUS_AVG;
+
+                    let est_msg = OutputMessageBuilder::default()
+                        .x(x_est)
+                        .y(y_est)
+                        .which("Estimate")
+                        .frame(frame)
+                        .build();
+
+                    output_info.push(est_msg);
                     println!("Frame:{frame}, Trilateration resulted in x={x_est}, y={y_est}");
                 }
 
                 // Done
                 sat_frames.remove(&frame);
                 car_frames.remove(&frame);
+            }
+
+            for msg in output_info {
+                let json = serde_json::to_string(&msg)?;
+                publisher.send(json.as_bytes(), 0)?;
             }
         }
     }

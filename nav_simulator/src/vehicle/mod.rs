@@ -20,6 +20,7 @@ pub struct Vehicle {
     waypoints: Vec<(f64, f64)>,
     original_v: f64,
     original_fuel: f64,
+    fuel_percentage: f64,
     logging: bool,
 }
 
@@ -39,6 +40,10 @@ impl Vehicle {
 
     pub fn fuel(&self) -> f64 {
         self.fuel
+    }
+
+    pub fn fuel_percentage(&self) -> f64 {
+        self.fuel_percentage
     }
 
     pub fn fuel_efficiency(&self) -> f64 {
@@ -202,6 +207,8 @@ impl Vehicle {
 
         self.update_fuel(dt);
 
+        self.fuel_percentage = (self.fuel / self.original_fuel) * 100.0;
+
         if self.fuel <= 0.0 {
             if self.logging {
                 println!("No more fuel available -- ending simulation");
@@ -225,10 +232,7 @@ impl Vehicle {
                 self.timestamp, self.x, self.y
             );
             println!("Velocity magnitude = {}", self.v);
-            println!(
-                "{}% of fuel remaining\n",
-                (self.fuel / self.original_fuel) * 100.0
-            );
+            println!("{}% of fuel remaining\n", self.fuel_percentage);
         }
 
         self.timestamp += dt;
