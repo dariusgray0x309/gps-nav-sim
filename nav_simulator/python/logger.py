@@ -16,7 +16,13 @@ socket.connect(args.sub_addr)
 socket.setsockopt_string(zmq.SUBSCRIBE, "")
 socket.subscribe("")
 
-while True:
-    msg = socket.recv_string()
-    data = json.loads(msg)
-    print(f"{data}")
+try:
+    while True:
+        msg = socket.recv_string()
+        data = json.loads(msg)
+        print(f"{data}")
+except KeyboardInterrupt:
+    print("\nKeyboardInterrupt received, shutting down\n")
+finally:
+    socket.close()
+    context.term
