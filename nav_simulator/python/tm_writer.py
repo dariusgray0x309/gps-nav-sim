@@ -43,7 +43,7 @@ def main():
 
     folder : Path = Path(f"{os.getcwd()}/sim_data/logs")
     output_file : Path = next_log_file(folder, "telemetry", args.ext)
-    print(f"creating {output_file}")
+    print(f"creating {output_file}\n")
 
     column_names : list[str] = ["id", "x", "y", "r", "t", "which", "frame", "fuel"]
 
