@@ -136,7 +136,7 @@ impl fmt::Display for Telemetry {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Default, Serialize, Deserialize)]
 pub struct OutputMessage {
     id: u8,
     x: f64,
@@ -148,26 +148,69 @@ pub struct OutputMessage {
     fuel: f64,
 }
 
-impl OutputMessage {
-    pub fn new(
-        id: u8,
-        x: f64,
-        y: f64,
-        r: f64,
-        t: f64,
-        which: String,
-        frame: u64,
-        fuel: f64,
-    ) -> Self {
+#[derive(Default)]
+pub struct OutputMessageBuilder {
+    id: u8,
+    x: f64,
+    y: f64,
+    r: f64,
+    t: f64,
+    which: String,
+    frame: u64,
+    fuel: f64,
+}
+
+impl OutputMessageBuilder {
+    pub fn id(mut self, input: u8) -> Self {
+        self.id = input;
+        self
+    }
+
+    pub fn x(mut self, input: f64) -> Self {
+        self.x = input;
+        self
+    }
+
+    pub fn y(mut self, input: f64) -> Self {
+        self.y = input;
+        self
+    }
+
+    pub fn r(mut self, input: f64) -> Self {
+        self.r = input;
+        self
+    }
+
+    pub fn t(mut self, input: f64) -> Self {
+        self.t = input;
+        self
+    }
+
+    pub fn which(mut self, input: impl Into<String>) -> Self {
+        self.which = input.into();
+        self
+    }
+
+    pub fn frame(mut self, input: u64) -> Self {
+        self.frame = input;
+        self
+    }
+
+    pub fn fuel(mut self, input: f64) -> Self {
+        self.fuel = input;
+        self
+    }
+
+    pub fn build(self) -> OutputMessage {
         OutputMessage {
-            id,
-            x,
-            y,
-            r,
-            t,
-            which,
-            frame,
-            fuel,
+            id: self.id,
+            x: self.x,
+            y: self.y,
+            r: self.r,
+            t: self.t,
+            which: self.which,
+            frame: self.frame,
+            fuel: self.fuel,
         }
     }
 }

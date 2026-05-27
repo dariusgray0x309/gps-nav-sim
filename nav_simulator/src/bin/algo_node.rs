@@ -1,7 +1,7 @@
 use clap::Parser;
 use nav_simulator::satellite::orbit;
-use nav_simulator::util::Telemetry;
 use nav_simulator::util::{self, OutputMessage};
+use nav_simulator::util::{OutputMessageBuilder, Telemetry};
 
 use std::collections::HashMap;
 
@@ -94,16 +94,15 @@ fn main() -> anyhow::Result<()> {
                     frame,
                 } = car
                 {
-                    let vehicle_msg = OutputMessage::new(
-                        0,
-                        *x,
-                        *y,
-                        0.0,
-                        *t,
-                        String::from("Vehicle"),
-                        *frame,
-                        *fuel,
-                    );
+                    let vehicle_msg = OutputMessageBuilder::default()
+                        .x(*x)
+                        .y(*y)
+                        .t(*t)
+                        .which("Vehicle")
+                        .frame(*frame)
+                        .fuel(*fuel)
+                        .build();
+
                     output_info.push(vehicle_msg);
                     (*x, *y)
                 } else {
@@ -124,16 +123,17 @@ fn main() -> anyhow::Result<()> {
                     {
                         let sat_pos = (*x, *y);
                         let r_calc = util::compute_2_d_range(&sat_pos, &car_pos);
-                        let sat_msg = OutputMessage::new(
-                            *id,
-                            *x,
-                            *y,
-                            r_calc,
-                            *t,
-                            String::from("Satellite"),
-                            *frame,
-                            0.0,
-                        );
+
+                        let sat_msg = OutputMessageBuilder::default()
+                            .id(*id)
+                            .x(*x)
+                            .y(*y)
+                            .r(r_calc)
+                            .t(*t)
+                            .which("Satellite")
+                            .frame(*frame)
+                            .build();
+
                         output_info.push(sat_msg);
                         trilateration_inputs.push(Telemetry::SATELLITE {
                             id: *id,
@@ -150,16 +150,14 @@ fn main() -> anyhow::Result<()> {
                     let (mut x_est, y_est) =
                         Telemetry::compute_trilateration(&trilateration_inputs);
                     x_est -= orbit::EARTH_RADIUS_AVG;
-                    let est_msg = OutputMessage::new(
-                        0,
-                        x_est,
-                        y_est,
-                        0.0,
-                        0.0,
-                        String::from("Estimate"),
-                        frame,
-                        0.0,
-                    );
+
+                    let est_msg = OutputMessageBuilder::default()
+                        .x(x_est)
+                        .y(y_est)
+                        .which("Estimate")
+                        .frame(frame)
+                        .build();
+
                     output_info.push(est_msg);
                     println!("Frame:{frame}, Trilateration resulted in x={x_est}, y={y_est}");
                 }
