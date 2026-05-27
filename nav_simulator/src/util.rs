@@ -135,3 +135,39 @@ impl fmt::Display for Telemetry {
         }
     }
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct OutputMessage {
+    id: u8,
+    x: f64,
+    y: f64,
+    r: f64,
+    t: f64,
+    which: String,
+    frame: u64,
+    fuel: f64,
+}
+
+impl OutputMessage {
+    pub fn new(
+        id: u8,
+        x: f64,
+        y: f64,
+        r: f64,
+        t: f64,
+        which: String,
+        frame: u64,
+        fuel: f64,
+    ) -> Self {
+        OutputMessage {
+            id,
+            x,
+            y,
+            r,
+            t,
+            which,
+            frame,
+            fuel,
+        }
+    }
+}
