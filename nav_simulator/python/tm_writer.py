@@ -41,7 +41,7 @@ def main():
     socket.connect(args.sub_addr) # type: ignore
     socket.subscribe("") # type: ignore
 
-    folder : Path = Path(f"{os.getcwd()}/../sim_data/logs")
+    folder : Path = Path(f"{os.getcwd()}/sim_data/logs")
     output_file : Path = next_log_file(folder, "telemetry", args.ext)
     print(f"creating {output_file}")
 
@@ -51,6 +51,7 @@ def main():
         with open(output_file, "a", newline="") as file:
             writer : csv.DictWriter[str] = csv.DictWriter(file, fieldnames=column_names)
             writer.writeheader()
+            print(f"writing data to {output_file}")
 
             while True:
                 msg = socket.recv_string() # type: ignore
