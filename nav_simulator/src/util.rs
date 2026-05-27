@@ -86,7 +86,7 @@ impl Populate for vehicle::Vehicle {
         Telemetry::VEHICLE {
             x: self.position().0,
             y: self.position().1,
-            fuel: self.fuel(),
+            fuel: self.fuel_percentage(),
             t: self.timestamp(),
             frame: self.frame(),
         }
