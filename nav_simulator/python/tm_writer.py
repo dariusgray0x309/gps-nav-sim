@@ -27,38 +27,42 @@ def next_log_file(directory : Path, prefix : str = "telemetry", ext : str = ".cs
 
     return directory / f"{prefix}_{file_num}{ext}"
 
-cli = argparse.ArgumentParser(None)
-cli.add_argument("-s", "--sub_addr", default="tcp://localhost:8081")
-cli.add_argument("-e", "--ext", default=".txt")
+def main():
+    cli = argparse.ArgumentParser(None)
+    cli.add_argument("-s", "--sub_addr", default="tcp://localhost:8081")
+    cli.add_argument("-e", "--ext", default=".txt")
 
-args = cli.parse_args(None)
+    args = cli.parse_args(None)
 
-print(f"subscriber address = {args.sub_addr}\n")
+    print(f"subscriber address = {args.sub_addr}\n")
 
-context : zmq.Context = zmq.Context() # type: ignore
-socket : zmq.Socket = context.socket(zmq.SUB) # type: ignore
-socket.connect(args.sub_addr) # type: ignore
-socket.subscribe("") # type: ignore
+    context : zmq.Context = zmq.Context() # type: ignore
+    socket : zmq.Socket = context.socket(zmq.SUB) # type: ignore
+    socket.connect(args.sub_addr) # type: ignore
+    socket.subscribe("") # type: ignore
 
-folder : Path = Path(f"{os.getcwd()}/../sim_data/logs")
-output_file : Path = next_log_file(folder, "telemetry", args.ext)
-print(f"creating {output_file}")
+    folder : Path = Path(f"{os.getcwd()}/../sim_data/logs")
+    output_file : Path = next_log_file(folder, "telemetry", args.ext)
+    print(f"creating {output_file}")
 
-column_names : list[str] = ["id", "x", "y", "r", "t", "which", "frame", "fuel"]
+    column_names : list[str] = ["id", "x", "y", "r", "t", "which", "frame", "fuel"]
 
-try:
-    with open(output_file, "a", newline="") as file:
-        writer : csv.DictWriter[str] = csv.DictWriter(file, fieldnames=column_names)
-        writer.writeheader()
-        
-        while True:
-            msg = socket.recv_string() # type: ignore
-            data = json.loads(msg) # type: ignore
-            #print(f"{data}")
-            writer.writerow(data)
+    try:
+        with open(output_file, "a", newline="") as file:
+            writer : csv.DictWriter[str] = csv.DictWriter(file, fieldnames=column_names)
+            writer.writeheader()
 
-except KeyboardInterrupt:
-    print("\nKeyboardInterrupt received, shutting down\n")
-finally:
-    socket.close() # type: ignore
-    context.term() # type: ignore
+            while True:
+                msg = socket.recv_string() # type: ignore
+                data = json.loads(msg) # type: ignore
+                #print(f"{data}")
+                writer.writerow(data)
+
+    except KeyboardInterrupt:
+        print("\nKeyboardInterrupt received, shutting down\n")
+    finally:
+        socket.close() # type: ignore
+        context.term() # type: ignore
+
+if __name__ == "__main__":
+    main()
