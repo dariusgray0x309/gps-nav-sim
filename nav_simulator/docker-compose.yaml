@@ -4,8 +4,16 @@ services:
     container_name: algo
     command: ["/usr/local/bin/algo_node", "--sub-addr", "tcp://0.0.0.0:8080", "--pub-addr", "tcp://0.0.0.0:8081"]
     ports:
-      - "8080:8080" #<host port>:<container port>
-      - "8081:8081"
+      - "8081:8081" #<host port>:<container port>
+
+  telemetry:
+    image: nav-telemetry:latest
+    container_name: telemetry
+    command:  ["python", "-u", "tm_writer.py", "-s", "tcp://algo:8081", "-e", ".txt"]
+    depends_on:
+      - algo
+    volumes:
+      - ./sim_data/logs:/app/sim_data/logs
 
   sat1:
     image: nav-simulator:latest

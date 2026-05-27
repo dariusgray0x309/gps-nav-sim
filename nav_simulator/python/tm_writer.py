@@ -51,7 +51,7 @@ def main():
         with open(output_file, "a", newline="") as file:
             writer : csv.DictWriter[str] = csv.DictWriter(file, fieldnames=column_names)
             writer.writeheader()
-            print(f"writing data to {output_file}")
+            print(f"writing data to {output_file}\n")
 
             while True:
                 msg = socket.recv_string() # type: ignore
