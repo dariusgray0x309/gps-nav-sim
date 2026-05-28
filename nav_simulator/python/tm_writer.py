@@ -27,7 +27,7 @@ def next_log_file(directory : Path, prefix : str = "telemetry", ext : str = ".cs
 
     return directory / f"{prefix}_{file_num}{ext}"
 
-def main():
+def main() -> None:
     cli = argparse.ArgumentParser(None)
     cli.add_argument("-s", "--sub_addr", default="tcp://localhost:8081")
     cli.add_argument("-e", "--ext", default=".txt")

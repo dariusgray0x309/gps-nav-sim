@@ -1,3 +1,4 @@
 nav_simulator/target/
 .vscode
 nav_simulator/.venv
+nav_simulator/.mypy_cache

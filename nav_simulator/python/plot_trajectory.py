@@ -5,7 +5,7 @@ from pathlib import Path
 import argparse
 from datetime import datetime
 
-def plot_data(file_name : str):
+def plot_data(file_name : str) -> None:
     
     now = datetime.now()
 
@@ -113,7 +113,7 @@ def plot_data(file_name : str):
     print(f"saving {img_name} to {save_dir}")
     plt.savefig(f"{save_dir}/{img_name}")
     
-def main():
+def main() -> None:
 
     cli = argparse.ArgumentParser(None)
     cli.add_argument("-f", "--file_name", default="telemetry_000.txt")
