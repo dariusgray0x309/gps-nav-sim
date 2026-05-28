@@ -1,0 +1,72 @@
+name: Project CI
+
+on:
+  push:
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  rust:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: nav_simulator
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - uses: dtolnay/rust-toolchain@stable
+
+    - name:  Check formatting
+      run:  cargo fmt --all -- --check
+
+    - name: Run Clippy
+      run:  cargo clippy --all-targets --all-features -- -D warnings
+
+    - name: Build release
+      run: cargo build --release
+
+  python:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: nav_simulator
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.14"
+    
+    - name: Install python deps
+      run: pip install -r python/requirements.txt 
+
+    - name:  Check python syntax
+      run: python -m py_compile python/*.py
+
+    - name: Check python types with mypy
+      run: mypy python
+
+  docker:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: nav_simulator
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Build Rust image
+      run: docker build -t nav-simulator .
+
+    - name: Build Python image
+      run: docker build -t nav-telemetry ./python
+
+    - name: Validate docker-compose file
+      run: docker compose config
