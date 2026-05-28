@@ -95,7 +95,7 @@ fn main() -> anyhow::Result<()> {
                 } = car
                 {
                     let vehicle_msg = OutputMessageBuilder::default()
-                        .x(*x)
+                        .x(*x - orbit::EARTH_RADIUS_AVG)
                         .y(*y)
                         .t(*t)
                         .which("Vehicle")
